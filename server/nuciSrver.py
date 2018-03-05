@@ -8,8 +8,8 @@ import requests
 INIT_DB_PORT = 12355
 ALREADY_INIT_DATABASE = False
 USERS = ["ilaykav", "ilayk"]
-PGUSERNAME = "postgres"
-PGPASSWORD = "pass"
+PGUSERNAME = "postgresusername"
+PGPASSWORD = "passpassword"
 PGHOST = "172.17.0.1"
 PERMISSION_SEQUENCE = "Can one of the admins approve running tests for this PR?"
 LAUNCH_WORD = "@nuci approved"
@@ -22,7 +22,7 @@ def add_comment_if_doesnt_exist(data):
     # if permission sequence not in comments add one
     if not is_in_comments(data, PERMISSION_SEQUENCE):
         session = requests.Session()
-        session.auth = ('Nuci314', 'f35202d61e6e6f344b71452de23579a17fddcf37')
+        session.auth = ('Nuci314', 'Nucitoken')
         session.post(data["issue"]["comments_url"], data="{\"body\" : \"{}\"}".format(PERMISSION_SEQUENCE))
 
 
@@ -57,7 +57,7 @@ def is_event_relevant(data):
 def is_in_comments(data, data_to_find, other_preference_function = None):
     numPage=1
     s = requests.Session()
-    s.auth = ('Nuci314', 'f35202d61e6e6f344b71452de23579a17fddcf37')
+    s.auth = ('Nuci314', 'Nucitoken')
     comments = s.get(data["issue"]["comments_url"], params={"page":numPage})
     comments = json.loads(comments.text)
 
@@ -146,7 +146,7 @@ def get_slack_id(slack_client, username):
 
 def get_last_commit_sha(data):
     session = requests.Session()
-    session.auth = ('Nuci314', 'f35202d61e6e6f344b71452de23579a17fddcf37')
+    session.auth = ('Nuci314', 'Nucitoken')
 
     commits = "commits"
     next_commits = commits
@@ -176,7 +176,7 @@ def update_github_status(context, status, data):
     session = requests.Session()
 
     # for updating github's status it is needed to be the repo's owner
-    session.auth = ('ilaykav', '940f5975a28f744b39883e2e2844a069da8480f8')
+    session.auth = ('ilaykav', 'ilaykavtoken')
 
     # get last commit's sha
     last_commit_sha = get_last_commit_sha(data)
@@ -197,7 +197,7 @@ def get_slackuser_name(conn, github_username, context):
         context.logger.info("username: {} is not registered in the db. message not sent".foramt(username))
         return ""
 
-def notify_slack(context, slack_username, conn, slack_client): #TODO: conection, nuclio function
+def notify_slack(context, slack_username, conn, slack_client):
 
         # get user's slack_id using slack username
         user_slack_id = get_slack_id(slack_client, slack_username)
@@ -231,7 +231,7 @@ def startNuci(context, github_username, data, clone_repo_url):
     context.logger.info("Nuci started")
 
     # init slack and postgres clients
-    slack_client = SlackClient('xoxb-323059689894-Z3jvb4Mmxr9XZKMkPlr0vbtC')
+    slack_client = SlackClient('slacktoken')
     conn = connect_postgres(PGUSERNAME, PGPASSWORD, PGHOST)
 
     # insert new job into jobs table in our postgres container
