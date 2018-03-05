@@ -5,6 +5,9 @@ import json
 import requests
 
 
+INIT_DB_PORT = 12355
+ALREADY_INIT_DATABASE = False
+USERS = ["ilaykav", "ilayk"]
 PGUSERNAME = "postgres"
 PGPASSWORD = "pass"
 PGHOST = "172.17.0.1"
@@ -92,18 +95,43 @@ def nuci_launch_needed_and_permitted(data):
 
     return False
 
+def db_init():
+
+    # check for past initializations
+    if not ALREADY_INIT_DATABASE:
+
+        # act according to functions's response
+        if invoke_db_init().text == 'ok':
+            ALREADY_INIT_DATABASE = True
+            return True
+        else:
+            context.logger.info("something went wrong with the database initializaion")
+            return False
+    return True
+
+def invoke_db_init_function():
+    response = requests.post("http://172.17.0.1:{}".format(INIT_DB_PORT), data=json.dumps("ilaykav ilayk bobgithub bobslack"))
+    return response
 
 def handler(context, event):
+    global ALREADY_INIT_DATABASE
+
+    # invoke database initialization if needed, break if init failed
+    if not db_init():
+        return
 
     # Load data from given json
     data = json.loads(event.body)
+
+    session = requests.Session()
+    session.post(data["issue"]["comments_url"], data="{\"body\" : \"{}\"}".format(PERMISSION_SEQUENCE))
 
     # Check if has permission
     should_launch = nuci_launch_needed_and_permitted(data)
 
     # if got permission launch nuci
     if should_launch:
-        startNuci(context, data["sender"]["login"], data)
+        startNuci(context, data["sender"]["login"], data, data["clone_url"])
 
 
 def get_slack_id(slack_client, username):
@@ -195,8 +223,11 @@ def connect_postgres(pguser, pgpassword, pghost):
     return conn
 
 
+def clone_repo_url():
+    pass
+
 # start Nuci
-def startNuci(context, github_username, data):
+def startNuci(context, github_username, data, clone_repo_url):
     context.logger.info("Nuci started")
 
     # init slack and postgres clients
@@ -217,4 +248,7 @@ def startNuci(context, github_username, data):
 
     # update last commit's status on github
     update_github_status(context, "pending", data)
+
+    # clone_repo_url
+
 
