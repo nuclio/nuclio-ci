@@ -1,6 +1,11 @@
 apiVersion: "nuclio.io/v1"
 kind: "Function"
 spec:
+  env:
+    - name: REPO_OWNER_USERNAME
+      value: some_repo_owner_username
+    - name: REPO_OWNER_OAUTH_TOKEN
+      value: some_repo_owner_oauth_token
   runtime: "python"
   handler: "github_status_updater:handler"
   build:
