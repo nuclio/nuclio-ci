@@ -1,0 +1,16 @@
+[flake8]
+
+# no lines over 120 allowed
+max-line-length = 120
+
+# show us where we got stuff wrong
+show_source = True
+
+# include our stuff
+select = E,F,W,C,I
+
+# ignore the following rules
+ignore =
+
+    # E731 do not assign a lambda expression, use a def
+    E731,
