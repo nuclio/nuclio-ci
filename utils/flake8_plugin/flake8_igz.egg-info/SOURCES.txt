@@ -1,0 +1,7 @@
+flake8_igz.py
+flake8_igz.egg-info/PKG-INFO
+flake8_igz.egg-info/SOURCES.txt
+flake8_igz.egg-info/dependency_links.txt
+flake8_igz.egg-info/entry_points.txt
+flake8_igz.egg-info/requires.txt
+flake8_igz.egg-info/top_level.txt

@@ -1,0 +1,11 @@
+Metadata-Version: 1.1
+Name: flake8-igz
+Version: 0.1.0
+Summary: iguazio's twisted extension to flake8
+Home-page: UNKNOWN
+Author: Omri Harel
+Author-email: omrih@iguaz.io
+License: MIT
+Description: UNKNOWN
+Platform: UNKNOWN
+Provides: flake8_igz
