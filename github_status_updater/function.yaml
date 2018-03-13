@@ -3,7 +3,6 @@ kind: "Function"
 spec:
   runtime: "python"
   handler: "github_status_updater:handler"
-
   build:
     baseImageName: jessie
     commands:
