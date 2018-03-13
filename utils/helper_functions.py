@@ -12,5 +12,5 @@ def http_post(host, port, send_data, send_as_json=False, auth_username=None, aut
         session.auth = (auth_username, auth_password)
 
     # post request to given host & port. Send as json if specified
-    response = requests.post('{}:{}'.format(host, port), data=(json.dumps(send_data) if send_as_json else send_data))
+    response = requests.post('{0}:{1}'.format(host, port), data=(json.dumps(send_data) if send_as_json else send_data))
     return response

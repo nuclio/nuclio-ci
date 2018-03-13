@@ -15,11 +15,11 @@ def handler(context, event):
     repo_owner_username, repo_owner_token = os.environ.get('REPO_OWNER_USERNAME'),
     os.environ.get('REPO_OWNER_OAUTH_TOKEN')
     if not (repo_owner_username and repo_owner_token):
-        return 'Plesae configure environment vars REPO_OWNER_USERNAME, REPO_OWNER_OAUTH_TOKEN'
+        raise NameError('Local variable REPO_OWNER_USERNAME or REPO_OWNER_OAUTH_TOKEN could not be found')
 
     session.auth = (repo_owner_username, repo_owner_token)
 
     # resolve url from request_body, update state of commit to given state
     # with github-api
-    session.post('{}/statuses/{}'.format(request_body['repo_url'], request_body['commit_sha']),
+    session.post('{0}/statuses/{1}'.format(request_body['repo_url'], request_body['commit_sha']),
                  json={'state': request_body['state']})
