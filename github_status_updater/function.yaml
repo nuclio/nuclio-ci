@@ -1,4 +1,4 @@
-apiVersion: "nuclio.io/v1"
+apiVersion: "nuclio.io/v1beta1"
 kind: "Function"
 spec:
   env:
@@ -9,6 +9,5 @@ spec:
   runtime: "python"
   handler: "github_status_updater:handler"
   build:
-    baseImageName: jessie
     commands:
     - "pip install requests"
