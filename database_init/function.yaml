@@ -1,1 +1,20 @@
- 
+apiVersion: "nuclio.io/v1beta1"
+kind: "Function"
+spec:
+  env:
+    - name: PGUSERNAME
+      value: postgres
+    - name: PGPASSWORD
+      value: pass
+    - name: PGHOST
+      value: 172.17.0.1
+    - name: PGPORT
+      value: 5432
+    - name: USERS
+      value: 'ilaykav ilayk pavius erand'
+  runtime: "python"
+  handler: "database_init:handler"
+  build:
+    baseImageName: jessie
+    commands:
+    - "pip install psycopg2"
