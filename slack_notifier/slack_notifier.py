@@ -9,7 +9,6 @@ SLACK_CLIENT = None
 # event should contain: slack_username of target
 def handler(context, event):
         global SLACK_CLIENT
-
         request_info = json.loads(event.body)
         slack_username = request_info['slack_username']
 
@@ -29,7 +28,8 @@ def handler(context, event):
         # get user's slack_id using slack username
         user_slack_id = get_slack_id(SLACK_CLIENT, slack_username)
 
-        # check if id found in slackbot's environment
+        # check if id found in slackbot's environment, if not - raise value error -
+        # id not found based on given username
         if not user_slack_id:
             context.logger.info(
                 'ValueError - failed to recieve user\'s id based on given username {0}'.format(slack_username))
@@ -43,10 +43,12 @@ def handler(context, event):
             as_user=True
         )
 
-        # check send result, log accordingly
+        # check send result, log & raise errors accordingly
         if slackbot_send_result['ok']:
             context.logger.info('message sent successfully')
         else:
+
+            # raise connection error - the sending process failed
             context.logger.info(
                 'ConnectionError - failed to send message to user {0}, id {1}, response - {2}'.format(
                     slack_username,
@@ -57,11 +59,14 @@ def handler(context, event):
                 'failed to send message to user {0}, id {1}'.format(slack_username, user_slack_id))
 
 
+# get slack id of username based on username and slack_client (search in slack_client's workspace)
 def get_slack_id(slack_client, username):
     members = slack_client.api_call('users.list')['members']
 
+    # iterate over members, return id of member if found
     for member in members:
         if member['name'].lower() == username.lower():
             return member['id']
 
+    # if not found return empty string
     return ''
