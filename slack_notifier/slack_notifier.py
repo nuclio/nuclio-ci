@@ -24,7 +24,7 @@ def handler(context, event):
                 raise NameError('Local variable NUCLIO_CI_SLACK_TOKEN could not be found')
 
             # init slack_client with given slack_token
-            SLACK_CLIENT = SlackClient(SLACK_CLIENT)
+            SLACK_CLIENT = SlackClient(slack_token)
 
         # get user's slack_id using slack username
         user_slack_id = get_slack_id(SLACK_CLIENT, slack_username)
@@ -36,7 +36,7 @@ def handler(context, event):
             raise ValueError('failed to recieve user\'s id based on given username {1}'.format(slack_username))
 
         # send a 'Nuci startred' message to the user
-        slackbot_send_result = SlackClient(SLACK_CLIENT).api_call(
+        slackbot_send_result = SLACK_CLIENT.api_call(
             'chat.postMessage',
             channel=user_slack_id,
             text='Your Nuci test started',
@@ -48,7 +48,11 @@ def handler(context, event):
             context.logger.info('message sent successfully')
         else:
             context.logger.info(
-                'ConnectionError - failed to send message to user {0}, id {1}'.format(slack_username, user_slack_id))
+                'ConnectionError - failed to send message to user {0}, id {1}, response - {2}'.format(
+                    slack_username,
+                    user_slack_id,
+                    slackbot_send_result
+                ))
             raise requests.ConnectionError(
                 'failed to send message to user {0}, id {1}'.format(slack_username, user_slack_id))
 

@@ -3,7 +3,7 @@ kind: "Function"
 spec:
   env:
     - name: NUCLIO_CI_SLACK_TOKEN
-      value: some_nuclio_ci_slack_token
+      value: some_nuclio_slack_token
   runtime: "python"
   handler: "slack_notifier:handler"
   build:
