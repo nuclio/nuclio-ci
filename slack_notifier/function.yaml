@@ -11,4 +11,3 @@ spec:
     commands:
     - "pip install slackclient"
     - "pip install requests"
-

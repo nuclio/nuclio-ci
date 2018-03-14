@@ -14,6 +14,7 @@ def handler(context, event):
     # get username & password from container's environment vars
     repo_owner_username, repo_owner_token = os.environ.get('REPO_OWNER_USERNAME'),\
         os.environ.get('REPO_OWNER_OAUTH_TOKEN')
+
     if not (repo_owner_username and repo_owner_token):
         raise NameError('Local variable REPO_OWNER_USERNAME or REPO_OWNER_OAUTH_TOKEN could not be found')
 
