@@ -1,4 +1,4 @@
-from slackclient import SlackClient
+import slackclient.client
 import requests
 import json
 import os
@@ -13,60 +13,33 @@ def handler(context, event):
         slack_username = request_info['slack_username']
 
         # init slack_client only if not initialized yet
-        if not SLACK_CLIENT:
+        if SLACK_CLIENT is None:
 
             # get slack token from env variable
             slack_token = os.environ.get('NUCLIO_CI_SLACK_TOKEN')
 
             # raise error if local variable not set
-            if not slack_token:
+            if slack_token is None:
                 raise NameError('Local variable NUCLIO_CI_SLACK_TOKEN could not be found')
 
             # init slack_client with given slack_token
-            SLACK_CLIENT = SlackClient(slack_token)
-
-        # get user's slack_id using slack username
-        user_slack_id = get_slack_id(SLACK_CLIENT, slack_username)
-
-        # check if id found in slackbot's environment, if not - raise value error -
-        # id not found based on given username
-        if not user_slack_id:
-            context.logger.info(
-                'ValueError - failed to recieve user\'s id based on given username {0}'.format(slack_username))
-            raise ValueError('failed to recieve user\'s id based on given username {1}'.format(slack_username))
+            SLACK_CLIENT = slackclient.SlackClient(slack_token)
 
         # send a 'Nuci startred' message to the user
         slackbot_send_result = SLACK_CLIENT.api_call(
             'chat.postMessage',
-            channel=user_slack_id,
+            channel='@{0}'.format(slack_username),
             text='Your Nuci test started',
             as_user=True
         )
 
         # check send result, log & raise errors accordingly
         if slackbot_send_result['ok']:
-            context.logger.info('message sent successfully')
+            context.logger.info('Message sent successfully to user {0}'.format(slack_username))
         else:
 
             # raise connection error - the sending process failed
-            context.logger.info(
-                'ConnectionError - failed to send message to user {0}, id {1}, response - {2}'.format(
-                    slack_username,
-                    user_slack_id,
-                    slackbot_send_result
-                ))
             raise requests.ConnectionError(
-                'failed to send message to user {0}, id {1}'.format(slack_username, user_slack_id))
-
-
-# get slack id of username based on username and slack_client (search in slack_client's workspace)
-def get_slack_id(slack_client, username):
-    members = slack_client.api_call('users.list')['members']
-
-    # iterate over members, return id of member if found
-    for member in members:
-        if member['name'].lower() == username.lower():
-            return member['id']
-
-    # if not found return empty string
-    return ''
+                'failed to send message to user {0}, response from slack - {1}'.format(
+                    slack_username,
+                    slackbot_send_result))
