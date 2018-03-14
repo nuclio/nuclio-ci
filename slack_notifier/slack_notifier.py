@@ -32,8 +32,8 @@ def handler(context, event):
         # check if id found in slackbot's environment
         if not user_slack_id:
             context.logger.info(
-                'ValueError - failed to recieve user\'s id based on given username {}'.format(slack_username))
-            raise ValueError('failed to recieve user\'s id based on given username {}'.format(slack_username))
+                'ValueError - failed to recieve user\'s id based on given username {0}'.format(slack_username))
+            raise ValueError('failed to recieve user\'s id based on given username {1}'.format(slack_username))
 
         # send a 'Nuci startred' message to the user
         slackbot_send_result = SlackClient(SLACK_CLIENT).api_call(
@@ -54,7 +54,6 @@ def handler(context, event):
 
 
 def get_slack_id(slack_client, username):
-    print('apicall' + str(slack_client.api_call('users.list')))
     members = slack_client.api_call('users.list')['members']
 
     for member in members:
