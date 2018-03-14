@@ -30,12 +30,11 @@ def handler(context, event):
             'chat.postMessage',
             channel='@{0}'.format(slack_username),
             text='Your Nuci test started',
-            as_user=True
         )
 
         # check send result, log & raise errors accordingly
         if slackbot_send_result['ok']:
-            context.logger.info('Message sent successfully to user {0}'.format(slack_username))
+            context.logger.info_with('Message sent successfully', user=slack_username)
         else:
 
             # raise connection error - the sending process failed
