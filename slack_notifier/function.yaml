@@ -1,1 +1,14 @@
- 
+apiVersion: "nuclio.io/v1"
+kind: "Function"
+spec:
+  env:
+    - name: NUCLIO_CI_SLACK_TOKEN
+      value: some_nuclio_ci_slack_token
+  runtime: "python"
+  handler: "slack_notifier:handler"
+  build:
+    baseImageName: jessie
+    commands:
+    - "pip install slackclient"
+    - "pip install requests"
+
