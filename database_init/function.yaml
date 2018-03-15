@@ -8,7 +8,5 @@ spec:
   handler: "database_init:handler"
   build:
     commands:
-    - "apk update"
-    - "apk add --virtual build-deps gcc python-dev musl-dev"
-    - "apk add postgresql-dev"
+    - "apk update && apk add --virtual build-deps gcc python-dev musl-dev && apk add postgresql-dev"
     - "pip install psycopg2 parse"
