@@ -2,6 +2,7 @@ import psycopg2
 import os
 
 
+# gets nothing in event.body
 def handler(context, event):
 
     # get postgres connection information from container's environment vars
@@ -19,7 +20,7 @@ def handler(context, event):
     conn = psycopg2.connect(host=postgres_host, user=postgres_user, password=postgres_password, port=postgres_port)
 
     # get usernames to insert
-    git_slack_usernames = users.split()
+    git_slack_usernames = users.split('_')
 
     # get every even and odd user together, to insert properly in users table
     users = [(git_slack_usernames[i], git_slack_usernames[i + 1]) for i in range(0, len(git_slack_usernames), 2)]

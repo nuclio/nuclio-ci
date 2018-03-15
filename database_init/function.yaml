@@ -3,18 +3,20 @@ kind: "Function"
 spec:
   env:
     - name: PGUSERNAME
-      value: postgres
+      value: some_postgres_username
     - name: PGPASSWORD
-      value: pass
+      value: some_password
     - name: PGHOST
-      value: 172.17.0.1
+      value: some_host
     - name: PGPORT
-      value: 5432
+      value: some_port
     - name: USERS
-      value: 'ilaykav ilayk pavius erand'
+      value: githubusername1_slackusername1_guthubusername2_slackusername2
   runtime: "python"
   handler: "database_init:handler"
   build:
-    baseImageName: jessie
     commands:
+    - "apk update"
+    - "apk add --virtual build-deps gcc python-dev musl-dev"
+    - "apk add postgresql-dev"
     - "pip install psycopg2"
