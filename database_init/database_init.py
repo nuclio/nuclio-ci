@@ -1,29 +1,31 @@
 import psycopg2
 import os
+import json
+import parse
 
 
-# gets nothing in event.body
+# init database, gets github-slack usernames in event.body in format of githubname1_slackname1_githubnameN_slacknameN
 def handler(context, event):
 
     # get postgres connection information from container's environment vars
-    postgres_host = os.environ.get('PGHOST')
-    postgres_user = os.environ.get('PGUSERNAME')
-    postgres_password = os.environ.get('PGPASSWORD')
-    postgres_port = os.environ.get('PGPORT')
-    users = os.environ.get('USERS')
+    postgres_info = parse_info(os.environ.get('PGINFO'))
 
-    # raise NameError if env var not found
-    if not (postgres_host and postgres_user and postgres_password and postgres_port and users):
-        raise NameError('Local variable PGUSERNAME, PGPASSWORD, PGHOST, PGPORT or USERS could not be found')
+    # raise NameError if env var not found, or found in wrong format
+    if postgres_info is None:
+        raise ValueError('Local variable PGINFO in proper format (user:password@host:port or user:password@host)'
+                         ' could not be found')
+
+    postgres_user, postgres_password, postgres_host, postgres_port = postgres_info
 
     # connect to postgres database,
     conn = psycopg2.connect(host=postgres_host, user=postgres_user, password=postgres_password, port=postgres_port)
 
-    # get usernames to insert
-    git_slack_usernames = users.split('_')
+    # get usernames from request to insert in USERS table
+    github_slack_usernames = json.loads(event.body)['users'].split('_')
 
     # get every even and odd user together, to insert properly in users table
-    users = [(git_slack_usernames[i], git_slack_usernames[i + 1]) for i in range(0, len(git_slack_usernames), 2)]
+    users = [(github_slack_usernames[i], github_slack_usernames[i + 1])
+             for i in range(0, len(github_slack_usernames), 2)]
 
     # proper commands to initialize database
     commands = ['create table test_cases (runnind_node oid, logs text, result int, job oid,'
@@ -42,3 +44,18 @@ def handler(context, event):
 
     # commit changes
     conn.commit()
+
+
+# gets string to process, return None if format is wrong, list of info if format is well writen -
+# return-list : username, password, host, port
+def parse_info(formatted_string):
+    if formatted_string is not None:
+
+        # check if default formatted string given
+        if parse.parse('{}:{}@{}:{}', formatted_string) is not None:
+            return list(parse.parse('{}:{}@{}:{}', formatted_string))
+
+        # if not, try get same format without the port specification
+        if parse.parse('{}:{}@{}', formatted_string) is not None:
+            return list(parse.parse('{}:{}@{}', formatted_string)) + [5432]
+    return None
