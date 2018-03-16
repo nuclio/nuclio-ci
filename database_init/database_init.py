@@ -70,8 +70,11 @@ def process_request(request_json, database_connection):
 
 # gets table name and row info (dict), returns insert query
 def get_add_query(table_name, row_info):
+
+    # {col1_name: col1_value, col2_name: col2_value} -> (col1_name, col2_name), ('col1_value', 'col2_value')
     return 'insert into {0} ({1}) values (\'{2}\')'.format(
         table_name,
-        functools.reduce(lambda x, y: str(x) + ', ' + str(y), row_info.keys()),
-        functools.reduce(lambda x, y: str(x) + '\', \'' + str(y), row_info.values())
+        ', '.join(row_info.keys()),
+        functools.reduce(lambda x, y: str(x) + '\', \'' + str(y), row_info.values())  # reduce + str() necessary because
+                                                                                      # values may be not-strings
     )
