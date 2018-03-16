@@ -2,6 +2,7 @@ import psycopg2
 import os
 import json
 import parse
+import functools
 
 
 # init database, gets info to put in tanles in event.body in format of
@@ -69,6 +70,8 @@ def process_request(request_json, database_connection):
 
 # gets table name and row info (dict), returns insert query
 def get_add_query(table_name, row_info):
-    return 'insert into {0} {1} values {2}'.format(table_name,
-                                                   str(tuple(row_info.keys())).replace('\'', '').replace(',)', ')'),
-                                                   str(tuple(row_info.values())).replace(',)', ')'))
+    return 'insert into {0} ({1}) values (\'{2}\')'.format(
+        table_name,
+        functools.reduce(lambda x, y: str(x) + ', ' + str(y), row_info.keys()),
+        functools.reduce(lambda x, y: str(x) + '\', \'' + str(y), row_info.values())
+    )
