@@ -75,6 +75,5 @@ def get_add_query(table_name, row_info):
     return 'insert into {0} ({1}) values (\'{2}\')'.format(
         table_name,
         ', '.join(row_info.keys()),
-        functools.reduce(lambda x, y: str(x) + '\', \'' + str(y), row_info.values())  # reduce + str() necessary because
-                                                                                      # values may be not-strings
+        '\', \''.join([str(val) for val in row_info.values()])
     )
