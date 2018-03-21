@@ -28,9 +28,11 @@ def handler(context, event):
 
 # calls given function with given arguments
 def call_function(function_name, function_arguments=None):
-    functions_ports = {'database_init': 36543,
-                       'github_status_updater': 36544,
-                       'slack_notifier': 36545}
+    functions_ports = {
+        'database_init': 36543,
+        'github_status_updater': 36544,
+        'slack_notifier': 36545
+    }
 
     # if given_host is specified post it instead of
     given_host = os.environ.get('DOCKER_HOST', '172.17.0.1')
