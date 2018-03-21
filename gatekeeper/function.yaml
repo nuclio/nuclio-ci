@@ -1,1 +1,11 @@
- 
+apiVersion: "nuclio.io/v1beta1"
+kind: "Function"
+spec:
+  env:
+    - name: REPO_OWNER_DETAILS
+      value: repo_owner_username:repo_owner_password
+  runtime: "python"
+  handler: "gatekeeper:handler"
+  build:
+    commands:
+    - "pip install requests parse"
