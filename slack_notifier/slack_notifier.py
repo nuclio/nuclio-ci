@@ -42,3 +42,16 @@ def handler(context, event):
                 'failed to send message to user {0}, response from slack - {1}'.format(
                     slack_username,
                     slackbot_send_result))
+
+
+# calls given function with given arguments
+def call_function(function_name, function_arguments):
+    functions_ports = {'database_init': 36543,
+                       'github_status_updater': 36544,
+                       'slack_notifier': 36545}
+
+    # if given_host is specified post it instead of
+    given_host = os.environ.get('NUCLIO_CI_SLACK_TOKEN')
+    requests.post('http://{0}:{1}'.format('172.17.0.1' if given_host is None else given_host,
+                  functions_ports[function_name]),
+                  data=function_arguments)
