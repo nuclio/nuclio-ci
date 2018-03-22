@@ -91,7 +91,7 @@ def get_github_authenticated_session():
     repo_owner_details = parse.parse('{}:{}', os.environ.get('REPO_OWNER_DETAILS'))
 
     # if REPO_OWNER_DETAILS is None, raise NameError
-    if repo_owner_details is not None:
+    if repo_owner_details is None:
         raise NameError('Local variable REPO_OWNER_DETAILS does not exist / not in the right format of '
                         'username:access_token')
 
