@@ -3,7 +3,7 @@ kind: "Function"
 spec:
   env:
     - name: REPO_OWNER_DETAILS
-      value: repo_owner_username:repo_owner_password
+      value: username:access_token
   runtime: "python"
   handler: "gatekeeper:handler"
   build:
