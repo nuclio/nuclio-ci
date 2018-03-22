@@ -2,7 +2,7 @@ import psycopg2
 import os
 import json
 import parse
-import functools
+import requests
 
 
 # init database, gets info to put in tanles in event.body in format of
@@ -75,6 +75,19 @@ def get_add_query(table_name, row_info):
     return 'insert into {0} ({1}) values (\'{2}\')'.format(
         table_name,
         ', '.join(row_info.keys()),
-        functools.reduce(lambda x, y: str(x) + '\', \'' + str(y), row_info.values())  # reduce + str() necessary because
-                                                                                      # values may be not-strings
+        '\', \''.join([str(val) for val in row_info.values()])
     )
+
+
+# calls given function with given arguments
+def call_function(function_name, function_arguments=None):
+    functions_ports = {
+        'database_init': 36543,
+        'github_status_updater': 36544,
+        'slack_notifier': 36545
+    }
+
+    # if given_host is specified post it instead of
+    given_host = os.environ.get('DOCKER_HOST', '172.17.0.1')
+    requests.post('http://{0}:{1}'.format(given_host, functions_ports[function_name]),
+                  data=function_arguments)
