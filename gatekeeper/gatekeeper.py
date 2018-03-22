@@ -88,15 +88,15 @@ def is_in_comments(comments_url, string_to_find, other_preference_function=None)
 def get_github_authenticated_session():
 
     # env var REPO_OWNER_DETAILS should be in pattern username:access_token
-    repo_owner_details = tuple(parse.parse('{}:{}', os.environ.get('REPO_OWNER_DETAILS')))
+    repo_owner_details = parse.parse('{}:{}', os.environ.get('REPO_OWNER_DETAILS'))
 
     # if REPO_OWNER_DETAILS is None, raise NameError
-    if not repo_owner_details:
+    if repo_owner_details is not None:
         raise NameError('Local variable REPO_OWNER_DETAILS does not exist / not in the right format of '
                         'username:access_token')
 
     session = requests.Session()
-    session.auth = repo_owner_details
+    session.auth = tuple(repo_owner_details)
     return session
 
 
