@@ -94,7 +94,7 @@ class Pr(object):
             if len(self.get_comments(body)) == 0:
                 self._session.post(self._get_comments_url(), json={'body': body})
             return
-            self._session.post(self._get_comments_url(), json={'body': body})
+        self._session.post(self._get_comments_url(), json={'body': body})
 
     # looks into the comments of the PR and returns the comments matching the body
     def get_comments(self, body=None):
