@@ -1,0 +1,21 @@
+apiVersion: "nuclio.io/v1beta1"
+kind: "Function"
+spec:
+  env:
+    - name: HOST_URL
+      value: localhost:5000
+    - name: GOPATH
+      value: /go/
+    - name: DOCKERIZED_BUILD
+      value: TRUE
+  runtime: "python"
+  handler: "build_push_artifacts:handler"
+  build:
+    baseImageName: ubuntu
+    commands:
+      - "apk add --update bash"
+      - "apk add git make docker"
+      - "apk add openrc --no-cache"
+      - "apk add go"
+      - "apk add --no-cache musl-dev"
+      - "pip install parse delegator.py"
