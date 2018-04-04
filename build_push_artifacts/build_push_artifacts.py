@@ -33,7 +33,7 @@ def handler(context, event):
     images_tags = tag_and_push_images_to_local_registry(context, images_tags, registry_host_and_port)
     context.logger.info('Successfully finished tagging and pushing images')
 
-    return images_tags
+    return context.Response(body=images_tags)
 
 
 # clone given git_url, checkouts to git_branch then git_commit if given

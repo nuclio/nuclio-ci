@@ -12,9 +12,5 @@ spec:
   handler: "build_push_artifacts:handler"
   build:
     commands:
-      - "apk add --update bash"
-      - "apk add git make docker"
-      - "apk add openrc --no-cache"
-      - "apk add go"
-      - "apk add --no-cache musl-dev"
+      - "apk add --update bash && apk add git make docker openrc go musl-dev"
       - "pip install parse delegator.py"
