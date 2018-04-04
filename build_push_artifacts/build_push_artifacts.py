@@ -3,6 +3,8 @@ import os
 import parse
 import delegator
 
+NUCLIO_PATH = '/go/src/github.com/nuclio'
+
 
 # get build git_url, optional git_branch & git_commit in event.body
 # returns image_tags if images in the local registry
@@ -39,29 +41,36 @@ def clone_and_build_repo(context, git_branch, git_commit=None, git_url=None):
 
     # make directory for git, init git, and clone given repository
     run_command(context, 'mkdir -p  /go/src/github.com/nuclio', '/')
+    run_command(context, 'git init && git clone {0}'.format(git_url), NUCLIO_PATH)
 
-    run_command(context, 'git init && git clone {0}'.format(git_url), '/go/src/github.com/nuclio')
+    # clone necessary github repos & get go packages
+    repos_to_clone = ['https://github.com/v3io/v3io-go-http', 'https://github.com/nuclio/logger.git',
+                      'https://github.com/nuclio/nuclio-sdk-go.git', 'https://github.com/nuclio/nuclio-sdk.git']
 
+    go_get_packages = ['github.com/nuclio/amqp/...', 'github.com/nuclio/nuclio-sdk-go/...',
+                       'github.com/nuclio/logger/...']
 
-    run_command(context, 'git clone https://github.com/v3io/v3io-go-http', '/go/src/github.com/nuclio')
-    run_command(context, 'mv v3io-go-http v3io', '/go/src/github.com/nuclio')
+    # clone every necessary repo to nuclio path
+    for repo_to_clone in repos_to_clone:
+        run_command(context, 'git clone {0}'.format(repo_to_clone), NUCLIO_PATH)
 
-    run_command(context, 'git clone https://github.com/nuclio/logger.git', '/go/src/github.com/nuclio')
-    run_command(context, 'git clone https://github.com/nuclio/nuclio-sdk-go.git', '/go/src/github.com/nuclio')
-    run_command(context, 'git clone https://github.com/nuclio/nuclio-sdk.git', '/go/src/github.com/nuclio')
+    # rename v3io-go-http
+    run_command(context, 'mv v3io-go-http v3io', NUCLIO_PATH)
 
-    run_command(context, 'go get github.com/nuclio/amqp/...', '/go/src/github.com/nuclio')
-    run_command(context, 'go get github.com/nuclio/nuclio-sdk-go/...', '/go/src/github.com/nuclio')
-    run_command(context, 'go get github.com/nuclio/logger/...', '/go/src/github.com/nuclio')
-    run_command(context, 'go get -d github.com/nuclio/v3io/...', '/go/src/github.com/nuclio')
+    # go get all needed packages
+    for go_get_package in go_get_packages:
+        run_command(context, 'go get {0}'.format(go_get_package), NUCLIO_PATH)
+
+    # go get and only download v3io
+    run_command(context, 'go get -d github.com/nuclio/v3io/...', NUCLIO_PATH)
 
     # checkout to branch & commit if given
     for checkout_value in [git_branch, git_commit]:
         if checkout_value is not None:
-            run_command(context, 'git checkout {0}'.format(checkout_value), '/go/src/github.com/nuclio/nuclio')
+            run_command(context, 'git checkout {0}'.format(checkout_value), '{0}/nuclio'.format(NUCLIO_PATH))
 
     # build artifacts
-    run_command(context, 'make build', '/go/src/github.com/nuclio/nuclio')
+    run_command(context, 'make build', '{0}/nuclio'.format(NUCLIO_PATH))
 
 
 # get all images tags, based on option make print-docker-images in MakeFile
@@ -69,7 +78,7 @@ def get_images_tags(context):
 
     # get all docker images, parse response
     images = parse.parse('{}done{}',
-                         run_command(context, 'make print-docker-images', '/go/nuclio/src/github.com/nuclio/nuclio'))
+                         run_command(context, 'make print-docker-images', '{0}/nuclio'.format(NUCLIO_PATH)))
 
     # raise ValueError if parse failed
     if images is None:
@@ -135,4 +144,3 @@ def run_command(context, cmd, cwd=None, timeout=None, env=None):
                                                                                  proc.out))
 
     return proc.out
-
