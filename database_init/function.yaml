@@ -4,7 +4,7 @@ spec:
   HTTPPort: 36543
   env:
     - name: PGINFO
-      value: some_postgres_username:some_password@some_host:some_port
+      value: postgres:pass@172.17.0.1:5432
   runtime: "python"
   handler: "database_init:handler"
   build:

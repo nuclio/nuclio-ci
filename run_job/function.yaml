@@ -1,0 +1,11 @@
+apiVersion: "nuclio.io/v1beta1"
+kind: "Function"
+spec:
+  env:
+    - name: PGINFO
+      value: postgres:pass@localhost:5432
+  runtime: "python"
+  handler: "run_job:handler"
+  build:
+    commands:
+    - "pip install psycopg2"
