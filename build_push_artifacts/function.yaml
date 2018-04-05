@@ -4,13 +4,12 @@ spec:
   env:
     - name: HOST_URL
       value: localhost:5000
-    - name: GOPATH
-      value: /go/
     - name: DOCKERIZED_BUILD
       value: TRUE
-  runtime: "python"
+  runtime: "python:3.6"
   handler: "build_push_artifacts:handler"
   build:
+    baseImage: jessie
     commands:
-      - "apk add --update bash && apk add git make docker openrc go musl-dev"
+      - "apt-get update && apt-get install -y git && apt-get install -y build-essential && apt-get install make"
       - "pip install parse delegator.py"

@@ -3,7 +3,8 @@ import os
 import parse
 import delegator
 
-NUCLIO_PATH = '/go/src/github.com/nuclio'
+NUCLIO_PATH = '/root/go/src/github.com/nuclio/nuclio'
+LOCAL_ARCH = 'amd64'
 
 
 # get build git_url, optional git_branch & git_commit in event.body
@@ -18,11 +19,16 @@ def handler(context, event):
     git_branch = request_body.get('git_branch')
 
     # check, if git_url (required var) is not given, raise NameError
-    if git_url is None:
-        raise NameError('Local variable NUCLIO_CI_SLACK_TOKEN could not be found')
+    for input_value in [git_url, git_commit, git_branch]:
+        if input_value is None:
+            raise NameError('Not all requested inputs (git_url, git_commit, git_branch) could be found')
 
-    # clone given repo with git clone repo-url, checkout branch / commit if necessary and make build
-    clone_and_build_repo(context, git_branch, git_commit, git_url)
+    # clone given repo with git clone repo-url
+    clone_repo(context, git_url)
+    context.logger.info('Successfully finished cloning repository')
+
+    # building repo with checkout branch / commit and make build
+    build_repo(context, git_branch, git_commit)
     context.logger.info('Successfully finished building repository')
 
     # get images tags
@@ -30,87 +36,78 @@ def handler(context, event):
     context.logger.info('Successfully resolved images tags')
 
     # tag and push images, update images_tags to names pushed to local registry
-    images_tags = tag_and_push_images_to_local_registry(context, images_tags, registry_host_and_port)
+    images_tags = push_images(context, images_tags, registry_host_and_port)
     context.logger.info('Successfully finished tagging and pushing images')
 
     return context.Response(body=images_tags)
 
 
-# clone given git_url, checkouts to git_branch then git_commit if given
-def clone_and_build_repo(context, git_branch, git_commit=None, git_url=None):
+# clone given git_url
+def clone_repo(context, git_url):
 
     # make directory for git, init git, and clone given repository
-    run_command(context, 'mkdir -p  /go/src/github.com/nuclio', '/')
-    run_command(context, 'git init && git clone {0}'.format(git_url), NUCLIO_PATH)
+    run_command(context, f'export PATH=$PATH:/usr/local/go/bin && export GOPATH=/root/go \
+    && curl -O https://download.docker.com/linux/static/stable/x86_64/docker-18.03.0-ce.tgz \
+    && tar xzvf docker-18.03.0-ce.tgz \
+    && cp docker/* /usr/bin/ \
+    && curl -O https://dl.google.com/go/go1.9.5.linux-amd64.tar.gz \
+    && tar -C /usr/local -xzf go1.9.5.linux-amd64.tar.gz \
+    && mkdir -p $GOPATH \
+    && cd $GOPATH \
+    && git clone {git_url} $GOPATH/src/github.com/nuclio/nuclio', '/tmp')
 
-    # clone necessary github repos & get go packages
-    repos_to_clone = ['https://github.com/v3io/v3io-go-http', 'https://github.com/nuclio/logger.git',
-                      'https://github.com/nuclio/nuclio-sdk-go.git', 'https://github.com/nuclio/nuclio-sdk.git']
 
-    go_get_packages = ['github.com/nuclio/amqp/...', 'github.com/nuclio/nuclio-sdk-go/...',
-                       'github.com/nuclio/logger/...']
-
-    # clone every necessary repo to nuclio path
-    for repo_to_clone in repos_to_clone:
-        run_command(context, 'git clone {0}'.format(repo_to_clone), NUCLIO_PATH)
-
-    # rename v3io-go-http
-    run_command(context, 'mv v3io-go-http v3io', NUCLIO_PATH)
-
-    # go get all needed packages
-    for go_get_package in go_get_packages:
-        run_command(context, 'go get {0}'.format(go_get_package), NUCLIO_PATH)
-
-    # go get and only download v3io
-    run_command(context, 'go get -d github.com/nuclio/v3io/...', NUCLIO_PATH)
+# checkout git_branch then git_commit & build
+def build_repo(context, git_branch, git_commit):
 
     # checkout to branch & commit if given
     for checkout_value in [git_branch, git_commit]:
-        if checkout_value is not None:
-            run_command(context, 'git checkout {0}'.format(checkout_value), '{0}/nuclio'.format(NUCLIO_PATH))
+        run_command(context, f'git checkout {checkout_value}', NUCLIO_PATH)
 
     # build artifacts
-    run_command(context, 'make build', '{0}/nuclio'.format(NUCLIO_PATH))
+    run_command(context, 'export PATH=$PATH:/usr/local/go/bin && export GOPATH=/root/go \
+    && go get github.com/v3io/v3io-go-http/... \
+    && go get github.com/nuclio/logger/... \
+    && go get github.com/nuclio/nuclio-sdk-go/... \
+    && go get github.com/nuclio/amqp/... \
+    && echo $PATH && echo $GOPATH && make build', NUCLIO_PATH)
 
 
 # get all images tags, based on option make print-docker-images in MakeFile
 def get_images_tags(context):
 
-    # get all docker images, parse response
-    images = parse.parse('{}done{}',
-                         run_command(context, 'make print-docker-images', '{0}/nuclio'.format(NUCLIO_PATH)))
+    # get all docker images
+    images = run_command(context, 'make print-docker-images', NUCLIO_PATH)
 
-    # raise ValueError if parse failed
-    if images is None:
-        raise ValueError('Could not parse images in format of \'{}done{}\'')
-
-    # convert parse response to list, get second var from list (images), split by \n->['', 'image_name1', 'image_name2']
-    images = list(images)[1].split('\n')
-
-    # remove empty image_tags in case of first / double '\n' -> ['image_name1', 'image_name2']
-    return list(filter(lambda image_tag: bool(image_tag), images))
+    # convert response to list by splitting all \n
+    return images.split('\n')
 
 
 # get image tags, tag the images with tag fit local registry push convention and push to given registry_host_and_port
-def tag_and_push_images_to_local_registry(context, images_tags, registry_host_and_port):
+def push_images(context, images_tags, registry_host_and_port):
 
     # iterate over all images_tags, tag each one for pushing to localhost, and return new tags of images_tags
     for image_index, image in enumerate(images_tags):
+
+            # skip env-declaring PATH to get arch by using own arch
+            image += LOCAL_ARCH
+
+            # parse result
             parse_result = parse.parse('{}/{}', image)
 
             # raise NameError if image parse was unsuccessful
             if parse_result is None:
-                raise NameError('Image tag {0} is not in format of nuclio/tag-of-image '.format(image))
+                raise NameError(f'Image tag {image} is not in format of nuclio/tag-of-image')
 
             # make new image tag, in format of registry_host_and_port/tag_of_image
-            new_image_tag = '{0}/{1}'.format(registry_host_and_port, list(parse_result)[1])
+            new_image_tag = f'{registry_host_and_port}/{list(parse_result)[1]}'
 
             # tag image with new image tag, relevant for pushing to local registry, log tag result
-            tag_result = run_command(context, 'docker tag {0} {1}'.format(image, new_image_tag), '/')
+            tag_result = run_command(context, f'docker tag {image} {new_image_tag}', '/')
             context.logger.info_with('Tagged image finished', Tag_result=tag_result)
 
             # push with the new image tag to local registry, log push result
-            push_result = run_command(context, 'docker push {0}'.format(new_image_tag), '/')
+            push_result = run_command(context, f'docker push {new_image_tag}', '/')
             context.logger.info_with('Pushed image finished', Push_result=push_result)
 
             # change image to its new tag values
@@ -119,7 +116,7 @@ def tag_and_push_images_to_local_registry(context, images_tags, registry_host_an
 
 
 # get env in map format {"key1":"value1"}
-def run_command(context, cmd, cwd=None, timeout=None, env=None):
+def run_command(context, cmd, cwd=None, env=None):
 
     context.logger.info_with('Running command', cmd=cmd, cwd=cwd, env=env)
 
@@ -133,14 +130,12 @@ def run_command(context, cmd, cwd=None, timeout=None, env=None):
         env = os_environ_copy
 
     if cwd is not None:
-        cmd = 'cd {0} && {1}'.format(cwd, cmd)
+        cmd = f'cd {cwd} && {cmd}'
 
     proc = delegator.run(cmd, env=env)
 
     # if we got here, the process completed
     if proc.return_code != 0:
-        raise ValueError('Command failed. cmd({0}) result({1}), log({2})'.format(cmd,
-                                                                                 proc.return_code,
-                                                                                 proc.out))
+        raise ValueError(f'Command failed. cmd({cmd}) result({proc.return_code}), log({proc.out})')
 
     return proc.out
