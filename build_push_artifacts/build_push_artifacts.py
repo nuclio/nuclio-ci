@@ -3,7 +3,7 @@ import os
 import parse
 import delegator
 
-NUCLIO_PATH = '/root/go/src/github.com/nuclio/nuclio'
+NUCLIO_PATH = os.environ.get('NUCLIO_PATH')
 LOCAL_ARCH = 'amd64'
 
 
@@ -19,9 +19,8 @@ def handler(context, event):
     git_branch = request_body.get('git_branch')
 
     # check, if git_url (required var) is not given, raise NameError
-    for input_value in [git_url, git_commit, git_branch]:
-        if input_value is None:
-            raise NameError('Not all requested inputs (git_url, git_commit, git_branch) could be found')
+    if None in [git_url, git_commit, git_branch]:
+        raise NameError('Not all requested inputs (git_url, git_commit, git_branch) could be found')
 
     # clone given repo with git clone repo-url
     clone_repo(context, git_url)
@@ -46,15 +45,7 @@ def handler(context, event):
 def clone_repo(context, git_url):
 
     # make directory for git, init git, and clone given repository
-    run_command(context, f'export PATH=$PATH:/usr/local/go/bin && export GOPATH=/root/go \
-    && curl -O https://download.docker.com/linux/static/stable/x86_64/docker-18.03.0-ce.tgz \
-    && tar xzvf docker-18.03.0-ce.tgz \
-    && cp docker/* /usr/bin/ \
-    && curl -O https://dl.google.com/go/go1.9.5.linux-amd64.tar.gz \
-    && tar -C /usr/local -xzf go1.9.5.linux-amd64.tar.gz \
-    && mkdir -p $GOPATH \
-    && cd $GOPATH \
-    && git clone {git_url} $GOPATH/src/github.com/nuclio/nuclio', '/tmp')
+    run_command(context, f'git clone {git_url} $GOPATH/src/github.com/nuclio/nuclio', '/tmp')
 
 
 # checkout git_branch then git_commit & build
@@ -65,12 +56,7 @@ def build_repo(context, git_branch, git_commit):
         run_command(context, f'git checkout {checkout_value}', NUCLIO_PATH)
 
     # build artifacts
-    run_command(context, 'export PATH=$PATH:/usr/local/go/bin && export GOPATH=/root/go \
-    && go get github.com/v3io/v3io-go-http/... \
-    && go get github.com/nuclio/logger/... \
-    && go get github.com/nuclio/nuclio-sdk-go/... \
-    && go get github.com/nuclio/amqp/... \
-    && echo $PATH && echo $GOPATH && make build', NUCLIO_PATH)
+    run_command(context, 'export PATH=$PATH:/usr/local/go/ && make build', NUCLIO_PATH)
 
 
 # get all images tags, based on option make print-docker-images in MakeFile
