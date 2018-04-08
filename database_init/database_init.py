@@ -26,7 +26,7 @@ def handler(context, event):
     commands = ['create table test_cases (runnind_node oid, logs text, result int, job oid,'
                 ' artifact_test text) with oids',
                 'create table nodes (current_test_case oid) with oids',
-                'create table jobs (state int) with oids',
+                'create table jobs (state int, artifact_urls text) with oids',
                 'create table users (github_username text, slack_username text) with oids']
 
     # cur is the cursor of current connection

@@ -1,9 +1,15 @@
 import psycopg2
 import os
 import parse
+import requests
+import json
 
-# event body should contain: git_url, git_commit, git_username
+
+# event body should contain: git_url, git_commit, git_username, commit_sha, git_branch
 def handler(context, event):
+
+    request_body = json.loads(event.body)
+
     # get postgres connection information from container's environment vars
     postgres_info = parse_env_var_info(os.environ.get('PGINFO'))
 
@@ -16,15 +22,50 @@ def handler(context, event):
 
     # connect to postgres database,
     conn = psycopg2.connect(host=postgres_host, user=postgres_user, password=postgres_password, port=postgres_port)
+    conn.autocommit = True
 
     # cur is the cursor of current connection
     cur = conn.cursor()
 
     # iterate over commands, execute them with the cursor
-    cur.execute('')
+    job_oid = cur.execute('insert into jobs (state) values (1)')
 
-    # commit changes
-    conn.commit()
+    # notify via slack that build is running
+    call_function('slack_notifier', json.load({'slack_username': request_body.get('git_username')}))
+
+    # notify via slack that build is running
+    call_function('github_status_updater', json.load({
+        'state': 'pending',
+        'repo_url': request_body.get('commit_sha'),
+        'commit_sha': request_body.get('commit_sha')
+    }))
+
+    artifact_urls = call_function('build_and_push_artifacts', {
+        'git_url': request_body.get('got_url'),
+        'git_commit': request_body.get('git_commit'),
+        'git_branch': request_body.get('git_branch')
+    })
+
+    # iterate over commands, execute them with the cursor
+    cur.execute(f'update jobs set artifact_urls = {artifact_urls} where oid = {job_oid}')
+
+    for artifact_test in artifact_urls:
+
+        # iterate over commands, execute them with the cursor
+        cur.execute(f'insert into test_cases (job, artifact_test) values ({job_oid}, {artifact_test})')
+
+    idle_nodes = cur.execute('select oid from nodes where current_test_case = -1;')
+
+    if not idle_nodes:
+        return
+
+    for test_case in cur.execute(f'select oid from test_cases where job = {job_oid}'):
+
+        idle_node = cur.execute(f'select oid from nodes where job = {job_oid}'
+
+        if idle_node id None:
+            return
+
 
 
 def parse_env_var_info(formatted_string):
@@ -39,3 +80,19 @@ def parse_env_var_info(formatted_string):
             return list(parse.parse('{}:{}@{}', formatted_string)) + [5432]
     return None
 
+
+# calls given function with given arguments, returns body of response
+def call_function(function_name, function_arguments=None):
+    functions_ports = {
+        'database_init': 36543,
+        'github_status_updater': 36544,
+        'slack_notifier': 36545,
+        'build_and_push_artifacts': 36546
+    }
+
+    # if given_host is specified post it instead of
+    given_host = os.environ.get('DOCKER_HOST', '172.17.0.1')
+    response = requests.post('http://{0}:{1}'.format(given_host, functions_ports[function_name]),
+                  data=function_arguments)
+
+    return response.text
