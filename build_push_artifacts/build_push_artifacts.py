@@ -44,8 +44,8 @@ def handler(context, event):
 # clone given git_url
 def clone_repo(context, git_url):
 
-    # make directory for git, init git, and clone given repository
-    run_command(context, f'git clone {git_url} $GOPATH/src/github.com/nuclio/nuclio', '/tmp')
+    # git clone given repository
+    run_command(context, f'git clone {git_url} {NUCLIO_PATH}', '/tmp')
 
 
 # checkout git_branch then git_commit & build
