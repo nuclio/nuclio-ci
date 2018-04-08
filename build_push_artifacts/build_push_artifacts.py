@@ -56,7 +56,7 @@ def build_repo(context, git_branch, git_commit):
         run_command(context, f'git checkout {checkout_value}', NUCLIO_PATH)
 
     # build artifacts
-    run_command(context, 'export PATH=$PATH:/usr/local/go/ && make build', NUCLIO_PATH)
+    run_command(context, 'export PATH=$PATH:/usr/local/go/bin && make build', NUCLIO_PATH)
 
 
 # get all images tags, based on option make print-docker-images in MakeFile
@@ -75,9 +75,6 @@ def push_images(context, images_tags, registry_host_and_port):
     # iterate over all images_tags, tag each one for pushing to localhost, and return new tags of images_tags
     for image_index, image in enumerate(images_tags):
 
-            # skip env-declaring PATH to get arch by using own arch
-            image += LOCAL_ARCH
-
             # parse result
             parse_result = parse.parse('{}/{}', image)
 
@@ -86,7 +83,7 @@ def push_images(context, images_tags, registry_host_and_port):
                 raise NameError(f'Image tag {image} is not in format of nuclio/tag-of-image')
 
             # make new image tag, in format of registry_host_and_port/tag_of_image
-            new_image_tag = f'{registry_host_and_port}/{list(parse_result)[1]}'
+            new_image_tag = f'{registry_host_and_port}/{list(parse_result)[1]}{LOCAL_ARCH}'
 
             # tag image with new image tag, relevant for pushing to local registry, log tag result
             tag_result = run_command(context, f'docker tag {image} {new_image_tag}', '/')
