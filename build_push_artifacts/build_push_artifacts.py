@@ -24,19 +24,15 @@ def handler(context, event):
 
     # clone given repo with git clone repo-url
     clone_repo(context, git_url)
-    context.logger.info('Successfully finished cloning repository')
 
     # building repo with checkout branch / commit and make build
     build_repo(context, git_branch, git_commit)
-    context.logger.info('Successfully finished building repository')
 
     # get images tags
     images_tags = get_images_tags(context)
-    context.logger.info('Successfully resolved images tags')
 
     # tag and push images, update images_tags to names pushed to local registry
     images_tags = push_images(context, images_tags, registry_host_and_port)
-    context.logger.info('Successfully finished tagging and pushing images')
 
     return context.Response(body=images_tags)
 
@@ -45,7 +41,7 @@ def handler(context, event):
 def clone_repo(context, git_url):
 
     # git clone given repository
-    run_command(context, f'git clone {git_url} {NUCLIO_PATH}', '/tmp')
+    run_command(context, f'git clone {git_url} {NUCLIO_PATH}', '/')
 
 
 # checkout git_branch then git_commit & build
@@ -76,26 +72,31 @@ def push_images(context, images_tags, registry_host_and_port):
     for image_index, image in enumerate(images_tags):
 
             # parse result
-            parse_result = parse.parse('{}/{}', image)
-
-            # raise NameError if image parse was unsuccessful
-            if parse_result is None:
-                raise NameError(f'Image tag {image} is not in format of nuclio/tag-of-image')
+            registry_name, image_tag = parse_docker_image_name(image)
 
             # make new image tag, in format of registry_host_and_port/tag_of_image
-            new_image_tag = f'{registry_host_and_port}/{list(parse_result)[1]}{LOCAL_ARCH}'
+            new_image_tag = f'{registry_host_and_port}/{image_tag}{LOCAL_ARCH}'
 
             # tag image with new image tag, relevant for pushing to local registry, log tag result
-            tag_result = run_command(context, f'docker tag {image} {new_image_tag}', '/')
-            context.logger.info_with('Tagged image finished', Tag_result=tag_result)
+            run_command(context, f'docker tag {image} {new_image_tag}', '/')
 
             # push with the new image tag to local registry, log push result
-            push_result = run_command(context, f'docker push {new_image_tag}', '/')
-            context.logger.info_with('Pushed image finished', Push_result=push_result)
+            run_command(context, f'docker push {new_image_tag}', '/')
 
             # change image to its new tag values
             images_tags[image_index] = new_image_tag
     return images_tags
+
+
+# returns parsed values- registry_name and image_tag of given input
+def parse_docker_image_name(parse_input):
+    parse_result = parse.parse('{}/{}', parse_input)
+
+    # raise NameError if image parse was unsuccessful
+    if parse_result is None:
+        raise NameError(f'Image tag {image} is not in format of nuclio/tag-of-image')
+
+    return list(parse_result)
 
 
 # get env in map format {"key1":"value1"}
@@ -120,5 +121,8 @@ def run_command(context, cmd, cwd=None, env=None):
     # if we got here, the process completed
     if proc.return_code != 0:
         raise ValueError(f'Command failed. cmd({cmd}) result({proc.return_code}), log({proc.out})')
+
+    # log result
+    context.logger.info_with('Command executed successfully', Command=cmd, Exit_code=proc.return_code, Stdout=proc.out)
 
     return proc.out
