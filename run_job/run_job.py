@@ -44,7 +44,7 @@ def handler(context, event):
     }))
 
     # build artifacts. this will clone the git repo and build artifacts.
-    artifact_urls = call_function('build_and_push_artifacts', json.dumps({
+    artifact_urls, artifact_tests = call_function('build_and_push_artifacts', json.dumps({
         'git_url': request_body.get('got_url'),
         'git_commit': request_body.get('git_commit'),
         'git_branch': request_body.get('git_branch')
@@ -54,7 +54,7 @@ def handler(context, event):
     cur.execute(f'update jobs set artifact_urls = \'{artifact_urls}\' where oid = {job_oid}')
 
     # for each artifact test, create a “test case” object in the database
-    for artifact_test in artifact_urls.split(' '):
+    for artifact_test in artifact_tests.split(' '):
         cur.execute(f'insert into test_cases (job, artifact_test) values ({job_oid}, \'{artifact_test}\')')
 
     # check if free nodes selection returns a value, if not -> there are no free nodes, so return
