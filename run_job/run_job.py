@@ -44,11 +44,15 @@ def handler(context, event):
     }))
 
     # build artifacts. this will clone the git repo and build artifacts.
-    artifact_urls, artifact_tests = call_function('build_and_push_artifacts', json.dumps({
+    build_and_push_return_value = json.loads(call_function('build_and_push_artifacts', json.dumps({
         'git_url': request_body.get('got_url'),
         'git_commit': request_body.get('git_commit'),
         'git_branch': request_body.get('git_branch')
-    }))
+    })))
+
+    # get artifact_urls & artifact_tests from build_and_push_return_value
+    artifact_urls = build_and_push_return_value.get('artifact_urls')
+    artifact_tests = build_and_push_return_value.get('tests_paths')
 
     # save artifact URLs in job
     cur.execute(f'update jobs set artifact_urls = \'{artifact_urls}\' where oid = {job_oid}')
