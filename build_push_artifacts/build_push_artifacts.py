@@ -29,15 +29,12 @@ def handler(context, event):
     build_repo(context, git_branch, git_commit)
 
     # get images tags
-    context.logger.info('iomage tagss')
     images_tags = get_images_tags(context)
 
     # tag and push images, update images_tags to names pushed to local registry
-    context.logger.info('artifact_urls')
     artifact_urls = push_images(context, images_tags, registry_host_and_port)
 
     # get tests-paths
-    context.logger.info('tests_paths ')
     tests_paths = run_command(context,
                               'go test -list=Test ./cmd/... ./pkg/... 2>&1 | grep \'^ok \' | cut -f2',
                               NUCLIO_PATH).split('\n')
