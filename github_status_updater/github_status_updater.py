@@ -22,7 +22,7 @@ def handler(context, event):
 
     # resolve url from request_body, update state of commit to given state
     # with github-api
-    session.post('{0}/statuses/{1}'.format(request_body['repo_url'], request_body['commit_sha']),
+    session.post(f'{request_body.get("repo_url")}/statuses/{request_body.get("commit_sha")}',
                  json={'state': request_body['state']})
 
 
@@ -31,12 +31,14 @@ def call_function(function_name, function_arguments=None):
     functions_ports = {
         'database_init': 36543,
         'github_status_updater': 36544,
-        'slack_notifier': 36545
+        'slack_notifier': 36545,
+        'build_and_push_artifacts': 36546,
+        'run_test_case': 36547
     }
 
     # if given_host is specified post it instead of
     given_host = os.environ.get('DOCKER_HOST', '172.17.0.1')
-    response = requests.post('http://{0}:{1}'.format(given_host, functions_ports[function_name]),
+    response = requests.post(f'http://{given_host}:{functions_ports[function_name]}',
                              data=function_arguments)
 
     return response.text

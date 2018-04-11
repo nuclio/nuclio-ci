@@ -28,7 +28,7 @@ def handler(context, event):
     # send a 'Nuci startred' message to the user
     slackbot_send_result = SLACK_CLIENT.api_call(
         'chat.postMessage',
-        channel='@{0}'.format(slack_username),
+        channel=f'@{slack_username}',
         text='Your Nuci test started',
     )
 
@@ -39,9 +39,7 @@ def handler(context, event):
 
         # raise connection error - the sending process failed
         raise requests.ConnectionError(
-            'failed to send message to user {0}, response from slack - {1}'.format(
-                slack_username,
-                slackbot_send_result))
+            f'failed to send message to user {slack_username}, response from slack - {slackbot_send_result}')
 
 
 # calls given function with given arguments, returns body of response
@@ -49,12 +47,13 @@ def call_function(function_name, function_arguments=None):
     functions_ports = {
         'database_init': 36543,
         'github_status_updater': 36544,
-        'slack_notifier': 36545
+        'slack_notifier': 36545,
+        'build_and_push_artifacts': 36546,
+        'run_test_case': 36547
     }
 
     # if given_host is specified post it instead of
     given_host = os.environ.get('DOCKER_HOST', '172.17.0.1')
-    response = requests.post('http://{0}:{1}'.format(given_host, functions_ports[function_name]),
-                             data=function_arguments)
+    response = requests.post(f'http://{given_host}:{functions_ports[function_name]}', data=function_arguments)
 
     return response.text
