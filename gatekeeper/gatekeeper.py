@@ -29,8 +29,13 @@ def handler(context, event):
             pr.add_comment(PERMISSION_SEQUENCE, exclusive=True)
             return
 
-    # TODO: call_function('run_job')
-    context.logger.info('start nuci')
+    # event body should contain: git_url, git_username, commit_sha, git_branch
+    context.logger.info('Nuci started')
+    call_function('run_job', json.dumps({'git_username': webhook_report['pull_request']['user']['login'],
+                                         'git_url': webhook_report['pull_request']['html_url'],
+                                         'commit_sha': webhook_report['pull_request']['head']['sha'],
+                                         'git_branch': webhook_report['pull_request']['head']['ref'],
+                                         'clone_url': webhook_report['pull_request']['head']['repo']['git_url']}))
 
 
 # check if anyone from whitelist allowed run integration tests
@@ -128,3 +133,21 @@ class Pr(object):
             return self._webhook['issue']['pull_request']['comments_url']
 
         return self._webhook['pull_request']['comments_url']
+
+
+# calls given function with given arguments, returns body of response
+def call_function(function_name, function_arguments=None):
+    functions_ports = {
+        'database_init': 36543,
+        'github_status_updater': 36544,
+        'slack_notifier': 36545,
+        'build_and_push_artifacts': 36546,
+        'run_test_case': 36547,
+        'run_job': 36548
+    }
+
+    # if given_host is specified post it instead of
+    given_host = os.environ.get('DOCKER_HOST', '172.17.0.1')
+    response = requests.post(f'http://{given_host}:{functions_ports[function_name]}', data=function_arguments)
+
+    return response.text

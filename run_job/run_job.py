@@ -5,7 +5,7 @@ import requests
 import json
 
 
-# event body should contain: git_url, git_commit, git_username, commit_sha, git_branch
+# event body should contain: git_url, git_username, commit_sha, git_branch
 def handler(context, event):
     request_body = json.loads(event.body)
 
@@ -33,8 +33,20 @@ def handler(context, event):
     # get OID of inserted job
     job_oid = cur.fetchone()[0]
 
+    # convert github username to slack username
+    cur.execute(f'select slack_username from users where git_username=\'{request_body.get("git_username")}\'')
+
+    # get slack username of given github username
+    slack_username = cur.fetchone()
+
+    if slack_username is None:
+        raise ValueError('Failed converting git username to slack username')
+
+    # get first value of the postgresSQL tuple answer
+    slack_username = slack_username[0]
+
     # notify via slack that build is running
-    call_function('slack_notifier', json.dumps({'slack_username': request_body.get('git_username')}))
+    call_function('slack_notifier', json.dumps({'slack_username': slack_username}))
 
     # notify via github that build is running
     call_function('github_status_updater', json.dumps({
@@ -45,8 +57,8 @@ def handler(context, event):
 
     # build artifacts. this will clone the git repo and build artifacts.
     build_and_push_return_value = json.loads(call_function('build_and_push_artifacts', json.dumps({
-        'git_url': request_body.get('git_url'),
-        'git_commit': request_body.get('git_commit'),
+        'git_url': request_body.get('clone_url'),
+        'git_commit': request_body.get('commit_sha'),
         'git_branch': request_body.get('git_branch')
     })))
 
@@ -58,7 +70,7 @@ def handler(context, event):
     cur.execute(f'update jobs set artifact_urls = \'{artifact_urls}\' where oid = {job_oid}')
 
     # for each artifact test, create a “test case” object in the database
-    for artifact_test in artifact_tests.split(' '):
+    for artifact_test in artifact_tests:
         cur.execute(f'insert into test_cases (job, artifact_test) values ({job_oid}, \'{artifact_test}\')')
 
     # check if free nodes selection returns a value, if not -> there are no free nodes, so return
@@ -93,6 +105,7 @@ def handler(context, event):
         # run the specific test case on the specific node. since this is the first time this node will
         # run a test, pull is required
         context.logger.info_with('started test case', Node=idle_node, Test_case_id=test_case)
+
         # call_function('run_test_case', json.dumps({'node': idle_node,
         #                                            'pull_required': True,
         #                                            'test_case_id': test_case}))

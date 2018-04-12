@@ -27,7 +27,7 @@ def handler(context, event):
                 ' artifact_test text) with oids',
                 'create table nodes (current_test_case oid) with oids',
                 'create table jobs (state int, artifact_urls text) with oids',
-                'create table users (github_username text, slack_username text) with oids']
+                'create table users (git_username text, slack_username text) with oids']
 
     # cur is the cursor of current connection
     cur = conn.cursor()
