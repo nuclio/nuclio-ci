@@ -36,8 +36,9 @@ def handler(context, event):
 
     # get tests-paths
     tests_paths = run_command(context,
-                              'go test -list=Test ./cmd/... ./pkg/... 2>&1 | grep \'^ok \' | cut -f2',
-                              NUCLIO_PATH).split('\n')
+                              'find ./github.com/nuclio/nuclio/pkg ./github.com/nuclio/nuclio/cmd '
+                              '-name \'*_test.go\' -printf \'%h\n\' | sort -u',
+                              '/root/go/src/').split('\n')
 
     return context.Response(body=json.dumps({'artifact_urls': artifact_urls, 'tests_paths': tests_paths}))
 
