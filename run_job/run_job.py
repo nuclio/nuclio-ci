@@ -5,7 +5,7 @@ import requests
 import json
 
 
-# event body should contain: git_url, git_username, commit_sha, git_branch
+# event body should contain: git_url, git_username, commit_sha, git_branch, clone_url
 def handler(context, event):
     request_body = json.loads(event.body)
 
