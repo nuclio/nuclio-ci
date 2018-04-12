@@ -45,7 +45,7 @@ def handler(context, event):
 
     # build artifacts. this will clone the git repo and build artifacts.
     build_and_push_return_value = json.loads(call_function('build_and_push_artifacts', json.dumps({
-        'git_url': request_body.get('got_url'),
+        'git_url': request_body.get('git_url'),
         'git_commit': request_body.get('git_commit'),
         'git_branch': request_body.get('git_branch')
     })))
