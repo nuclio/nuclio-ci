@@ -6,15 +6,45 @@ import psycopg2
 
 PERMISSION_SEQUENCE = 'Can one of the admins approve running tests for this PR?'
 LAUNCH_WORD = '@nuci approved'
+MODES_WORTH_PULLING = ['pull']
 
 
 # get test_case_id & pull_mode in event.body
 def handler(context, event):
 
-    # Load data from given json,
+    # load data from given json,
     run_information = json.loads(event.body)
     pull_mode = run_information.get('pull_mode')
-    test_case_id = run_information.get('test_case_id ')
+    test_case_id = run_information.get('test_case_id')
+
+    # get a connection to the postgresSql database
+    conn = connect_to_db()
+
+    # cur is the cursor of current connection
+    cur = conn.cursor()
+
+    # for now, if pull_mode is 'pull' - pull from artifact_tests, if pull_mode is 'no_pull' do nothing
+    if pull_mode in MODES_WORTH_PULLING:
+        artifact_test = cursor_execute_must_return(f'select artifact_test from test_cases where oid = {test_case_id}')
+        run_command(f'docker pull {artifact_test}')
+
+    # gather logs from 'make test' command to a variable
+    logs = run_command('make test NUCLIO_TEST_NAME=\'{artifact_test}\'')
+
+    # take run result
+    run_result = run_command('echo $?')
+
+    # update test_cases values
+    cur.execute('update test_cases set logs=%s where oid=%s;', (logs, test_case_id))
+
+    call_function('test_case_complete', json.dumps({
+        'test_case': test_case_id,
+        'test_case_result': 'success' if run_result == 0 else 'failure',
+    }))
+
+
+# connect to db, return psycopg2 connection
+def connect_to_db():
 
     # get postgres connection information from container's environment vars
     postgres_info = parse_env_var_info(os.environ.get('PGINFO'))
@@ -26,27 +56,11 @@ def handler(context, event):
 
     postgres_user, postgres_password, postgres_host, postgres_port = postgres_info
 
-    # connect to postgres database,
+    # connect to postgres database, set autocommit to True to avoid committing
     conn = psycopg2.connect(host=postgres_host, user=postgres_user, password=postgres_password, port=postgres_port)
     conn.autocommit = True
 
-    # cur is the cursor of current connection
-    cur = conn.cursor()
-
-    # for now, if pull_mode is 'pull' - pull from artifact_tests, if pull_mode is 'no_pull' do nothing
-    if pull_mode == 'pull':
-        artifact_test = cursor_execute_must_return(f'select artifact_test from test_cases where oid = {test_case_id}')
-        run_command(f'docker pull {artifact_test}')
-
-    logs = run_command('make test NUCLIO_TEST_NAME=\'{artifact_test}\'')
-
-    cur.execute(f'update test_cases set logs=\'{logs}\' where oid = {test_case_id};')
-
-    call_function('test_case_complete', json.dumps({
-        'test_case': test_case_id,
-        'test_case_result': 'success',
-    }))
-
+    return conn
 
 def cursor_execute_must_return(cursor, command):
     cursor.execute(command)
