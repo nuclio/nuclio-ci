@@ -1,7 +1,7 @@
 apiVersion: "nuclio.io/v1beta1"
 kind: "Function"
 spec:
-  HTTPPORT: 36546
+  httpPort: 36546
   env:
     - name: HOST_URL
       value: localhost:5000

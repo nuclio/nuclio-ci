@@ -23,7 +23,7 @@ def handler(context, event):
     # resolve url from request_body, update state of commit to given state
     # with github-api
     session.post(f'{request_body.get("repo_url")}/statuses/{request_body.get("commit_sha")}',
-                 json={'state': request_body['state']})
+                 json={'state': request_body.get('state')})
 
 
 # calls given function with given arguments, returns body of response

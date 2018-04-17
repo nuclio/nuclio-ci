@@ -1,4 +1,5 @@
 import psycopg2
+import psycopg2.sql
 import os
 import json
 import parse
@@ -27,7 +28,7 @@ def handler(context, event):
                 ' artifact_test text) with oids',
                 'create table nodes (current_test_case oid) with oids',
                 'create table jobs (state int, artifact_urls text) with oids',
-                'create table users (git_username text, slack_username text) with oids']
+                'create table users (github_username text, slack_username text) with oids']
 
     # cur is the cursor of current connection
     cur = conn.cursor()
@@ -65,18 +66,18 @@ def process_request(request_json, database_connection):
     # insert data for every table in request
     for table in request_json:
         for row_info in request_json[table]:
-            cur.execute(get_add_query(table, row_info))
+            execute_using_parsed_arguments(cur, table, row_info)
 
 
-# gets table name and row info (dict), returns insert query
-def get_add_query(table_name, row_info):
+# gets table name and row info (dict), execute command according to these given args
+def execute_using_parsed_arguments(db_cursor, table_name, row_info):
 
     # {col1_name: col1_value, col2_name: col2_value} -> (col1_name, col2_name), ('col1_value', 'col2_value')
-    return 'insert into {0} ({1}) values (\'{2}\')'.format(
-        table_name,
-        ', '.join(row_info.keys()),
-        '\', \''.join([str(val) for val in row_info.values()])
-    )
+    db_cursor.execute(psycopg2.sql.SQL('insert into {0} ({1}) values ({2})').format(
+        psycopg2.sql.SQL(table_name),
+        psycopg2.sql.SQL(', ').join(map(psycopg2.sql.SQL, map(str, row_info.keys()))),
+        psycopg2.sql.SQL(', ').join(map(psycopg2.sql.Literal, map(str, row_info.values())))
+    ))
 
 
 # calls given function with given arguments, returns body of response

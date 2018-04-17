@@ -5,48 +5,27 @@ import requests
 import json
 
 
-# event body should contain: git_url, git_username, commit_sha, git_branch, clone_url
+# event body should contain: git_url, github_username, commit_sha, git_branch, clone_url
 def handler(context, event):
     request_body = json.loads(event.body)
 
-    # get postgres connection information from container's environment vars
-    postgres_info = parse_env_var_info(os.environ.get('PGINFO'))
-
-    # raise NameError if env var not found, or found in wrong format
-    if postgres_info is None:
-        raise ValueError('Local variable PGINFO in proper format (user:password@host:port or user:password@host)'
-                         ' could not be found')
-
-    postgres_user, postgres_password, postgres_host, postgres_port = postgres_info
-
-    # connect to postgres database, set autocommit to True to avoid committing
-    conn = psycopg2.connect(host=postgres_host, user=postgres_user, password=postgres_password, port=postgres_port)
-    conn.autocommit = True
+    # get a connection to the postgresSql database
+    conn = connect_to_db()
 
     # cur is the cursor of current connection
     cur = conn.cursor()
 
-    # create a db job object with information about this job. set the
-    # state to building artifacts
-    cur.execute('insert into jobs (state) values (1) returning oid')
+    # insert job and save its OID
+    job_oid = create_job(cur)
 
-    # get OID of inserted job
-    job_oid = cur.fetchone()[0]
-
-    # convert github username to slack username
-    cur.execute(f'select slack_username from users where git_username=\'{request_body.get("git_username")}\'')
-
-    # get slack username of given github username
-    slack_username = cur.fetchone()
-
-    if slack_username is None:
-        raise ValueError('Failed converting git username to slack username')
-
-    # get first value of the postgresSQL tuple answer
-    slack_username = slack_username[0]
+    # get slack username
+    slack_username = convert_slack_username(cur, request_body.get("github_username"))
 
     # notify via slack that build is running
-    call_function('slack_notifier', json.dumps({'slack_username': slack_username}))
+    call_function('slack_notifier', json.dumps({
+        'slack_username': slack_username,
+        'message': 'Your Nuci test started'
+    }))
 
     # notify via github that build is running
     call_function('github_status_updater', json.dumps({
@@ -56,22 +35,22 @@ def handler(context, event):
     }))
 
     # build artifacts. this will clone the git repo and build artifacts.
-    build_and_push_return_value = json.loads(call_function('build_and_push_artifacts', json.dumps({
+    build_and_push_artifacts_response = json.loads(call_function('build_and_push_artifacts', json.dumps({
         'git_url': request_body.get('clone_url'),
         'git_commit': request_body.get('commit_sha'),
         'git_branch': request_body.get('git_branch')
     })))
 
-    # get artifact_urls & artifact_tests from build_and_push_return_value
-    artifact_urls = build_and_push_return_value.get('artifact_urls')
-    artifact_tests = build_and_push_return_value.get('tests_paths')
+    # get artifact_urls & artifact_tests from build_and_push_artifacts_response
+    artifact_urls = build_and_push_artifacts_response.get('artifact_urls')
+    artifact_tests = build_and_push_artifacts_response.get('tests_paths')
 
     # save artifact URLs in job
-    cur.execute(f'update jobs set artifact_urls = \'{artifact_urls}\' where oid = {job_oid}')
+    cur.execute(f'update jobs set artifact_urls = %s where oid = %s', (json.dumps(artifact_urls), job_oid))
 
     # for each artifact test, create a “test case” object in the database
     for artifact_test in artifact_tests:
-        cur.execute(f'insert into test_cases (job, artifact_test) values ({job_oid}, \'{artifact_test}\')')
+        cur.execute(f'insert into test_cases (job, artifact_test) values (%s, %s)', (job_oid, artifact_test))
 
     # check if free nodes selection returns a value, if not -> there are no free nodes, so return
     cur.execute('select oid from nodes where current_test_case = -1')
@@ -80,7 +59,7 @@ def handler(context, event):
         return
 
     # iterate over the tests of the job
-    cur.execute(f'select oid from test_cases where job = {job_oid}')
+    cur.execute(f'select oid from test_cases where job = %s', (job_oid, ))
     for test_case in cur.fetchall():
 
         # get first value (relevant one) of the returned postgresSql tuple
@@ -100,7 +79,7 @@ def handler(context, event):
         idle_node = idle_node[0]
 
         # set the test case running on that node in the db
-        cur.execute(f'update nodes set current_test_case = {test_case} where oid={idle_node}')
+        cur.execute(f'update nodes set current_test_case = %s where oid=%s', (test_case, idle_node))
 
         # run the specific test case on the specific node. since this is the first time this node will
         # run a test, pull is required
@@ -109,6 +88,55 @@ def handler(context, event):
         # call_function('run_test_case', json.dumps({'node': idle_node,
         #                                            'pull_required': True,
         #                                            'test_case_id': test_case}))
+
+
+# get slack username from db according to given github_username
+def convert_slack_username(db_cursor, github_username):
+
+    # convert github username to slack username
+    db_cursor.execute(f'select slack_username from users where github_username=%s', (github_username, ))
+
+    # get slack username of given github username
+    slack_username = db_cursor.fetchone()
+
+    if slack_username is None:
+        raise ValueError('Failed converting git username to slack username')
+
+    # get first value of the postgresSQL tuple answer
+    return slack_username[0]
+
+
+# create job, return id of that job
+def create_job(db_cursor):
+
+    # create a db job object with information about this job. set the
+    # state to building artifacts
+    db_cursor.execute('insert into jobs (state) values (1) returning oid')
+
+    # get OID of inserted job
+    job_oid = db_cursor.fetchone()[0]
+
+    return job_oid
+
+
+# connect to db, return psycopg2 connection
+def connect_to_db():
+
+    # get postgres connection information from container's environment vars
+    postgres_info = parse_env_var_info(os.environ.get('PGINFO'))
+
+    # raise NameError if env var not found, or found in wrong format
+    if postgres_info is None:
+        raise ValueError('Local variable PGINFO in proper format (user:password@host:port or user:password@host)'
+                         ' could not be found')
+
+    postgres_user, postgres_password, postgres_host, postgres_port = postgres_info
+
+    # connect to postgres database, set autocommit to True to avoid committing
+    conn = psycopg2.connect(host=postgres_host, user=postgres_user, password=postgres_password, port=postgres_port)
+    conn.autocommit = True
+
+    return conn
 
 
 def parse_env_var_info(formatted_string):

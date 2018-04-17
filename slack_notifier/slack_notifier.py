@@ -6,11 +6,15 @@ import os
 SLACK_CLIENT = None
 
 
-# event should contain: slack_username of target
+# event should contain: slack_username of target, message for message to be sent
 def handler(context, event):
     global SLACK_CLIENT
     request_info = json.loads(event.body)
-    slack_username = request_info['slack_username']
+    slack_username = request_info.get('slack_username')
+    message_to_send = request_info.get('message')
+
+    if message_to_send is None:
+        raise NameError('Variable \'message\' could not be found in triggering package')
 
     # init slack_client only if not initialized yet
     if SLACK_CLIENT is None:
@@ -29,7 +33,7 @@ def handler(context, event):
     slackbot_send_result = SLACK_CLIENT.api_call(
         'chat.postMessage',
         channel=f'@{slack_username}',
-        text='Your Nuci test started',
+        text=message_to_send,
     )
 
     # check send result, log & raise errors accordingly

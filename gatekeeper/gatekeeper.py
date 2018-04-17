@@ -29,13 +29,15 @@ def handler(context, event):
             pr.add_comment(PERMISSION_SEQUENCE, exclusive=True)
             return
 
-    # event body should contain: git_url, git_username, commit_sha, git_branch
+    # event body should contain: git_url, github_username, commit_sha, git_branch
     context.logger.info('Nuci started')
-    call_function('run_job', json.dumps({'git_username': webhook_report['pull_request']['user']['login'],
-                                         'git_url': webhook_report['pull_request']['html_url'],
-                                         'commit_sha': webhook_report['pull_request']['head']['sha'],
-                                         'git_branch': webhook_report['pull_request']['head']['ref'],
-                                         'clone_url': webhook_report['pull_request']['head']['repo']['git_url']}))
+    call_function('run_job', json.dumps({
+        'github_username': webhook_report['pull_request']['user']['login'],
+        'git_url': webhook_report['pull_request']['html_url'],
+        'commit_sha': webhook_report['pull_request']['head']['sha'],
+        'git_branch': webhook_report['pull_request']['head']['ref'],
+        'clone_url': webhook_report['pull_request']['head']['repo']['git_url']
+    }))
 
 
 # check if anyone from whitelist allowed run integration tests
