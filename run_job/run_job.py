@@ -46,11 +46,11 @@ def handler(context, event):
     artifact_tests = build_and_push_artifacts_response.get('tests_paths')
 
     # save artifact URLs in job
-    cur.execute(f'update jobs set artifact_urls = %s where oid = %s', (json.dumps(artifact_urls), job_oid))
+    cur.execute('update jobs set artifact_urls = %s where oid = %s', (json.dumps(artifact_urls), job_oid))
 
     # for each artifact test, create a “test case” object in the database
     for artifact_test in artifact_tests:
-        cur.execute(f'insert into test_cases (job, artifact_test) values (%s, %s)', (job_oid, artifact_test))
+        cur.execute('insert into test_cases (job, artifact_test) values (%s, %s)', (job_oid, artifact_test))
 
     # check if free nodes selection returns a value, if not -> there are no free nodes, so return
     cur.execute('select oid from nodes where current_test_case = -1')
@@ -59,7 +59,7 @@ def handler(context, event):
         return
 
     # iterate over the tests of the job
-    cur.execute(f'select oid from test_cases where job = %s', (job_oid, ))
+    cur.execute('select oid from test_cases where job = %s', (job_oid, ))
     for test_case in cur.fetchall():
 
         # get first value (relevant one) of the returned postgresSql tuple
@@ -79,7 +79,7 @@ def handler(context, event):
         idle_node = idle_node[0]
 
         # set the test case running on that node in the db
-        cur.execute(f'update nodes set current_test_case = %s where oid=%s', (test_case, idle_node))
+        cur.execute('update nodes set current_test_case = %s where oid=%s', (test_case, idle_node))
 
         # run the specific test case on the specific node. since this is the first time this node will
         # run a test, pull is required
@@ -94,7 +94,7 @@ def handler(context, event):
 def convert_slack_username(db_cursor, github_username):
 
     # convert github username to slack username
-    db_cursor.execute(f'select slack_username from users where github_username=%s', (github_username, ))
+    db_cursor.execute('select slack_username from users where github_username=%s', (github_username, ))
 
     # get slack username of given github username
     slack_username = db_cursor.fetchone()
