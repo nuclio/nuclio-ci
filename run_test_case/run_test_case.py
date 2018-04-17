@@ -37,6 +37,7 @@ def handler(context, event):
     # update test_cases values
     cur.execute('update test_cases set logs=%s where oid=%s;', (logs, test_case_id))
 
+    # call test_case_complete
     call_function('test_case_complete', json.dumps({
         'test_case': test_case_id,
         'test_case_result': 'success' if run_result == 0 else 'failure',
