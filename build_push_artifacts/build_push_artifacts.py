@@ -32,9 +32,18 @@ def handler(context, event):
     images_tags = get_images_tags(context)
 
     # tag and push images, update images_tags to names pushed to local registry
-    images_tags = push_images(context, images_tags, registry_host_and_port)
+    artifact_urls = push_images(context, images_tags, registry_host_and_port)
 
-    return context.Response(body=images_tags)
+    # get tests-paths, `git checkout nuclio-ci-tmp-test-branch` is hardcoded until merging with dev
+    tests_paths = run_command(context,
+                              'git checkout nuclio-ci-tmp-test-branch && export PATH=$PATH:/usr/local/go/bin && '
+                              'make print-tests-paths',
+                              NUCLIO_PATH).split('\n')
+
+    # clean directory
+    run_command(context, 'rm -r  /root/go/src/', '/')
+
+    return context.Response(body=json.dumps({'artifact_urls': artifact_urls, 'tests_paths': tests_paths}))
 
 
 # clone given git_url
