@@ -5,6 +5,8 @@ import delegator
 
 NUCLIO_PATH = os.environ.get('NUCLIO_PATH')
 LOCAL_ARCH = 'amd64'
+NUCLIO_DOCKER_TEST_TAG = 'tester:latest-'
+NUCLIO_DOCKER_TEST_DOCKERFILE_PATH = 'nuclio/test/docker/CIDockerfile'
 
 
 # get build git_url, optional git_branch & git_commit in event.body
@@ -33,6 +35,10 @@ def handler(context, event):
 
     # tag and push images, update images_tags to names pushed to local registry
     artifact_urls = push_images(context, images_tags, registry_host_and_port)
+
+    # build and push tester image
+    artifact_urls.append(build_push_tester_image(context, registry_host_and_port, git_branch, git_commit))
+    context.logger.info_with('logs', artifact_urls=artifact_urls)
 
     # get tests-paths, `git checkout nuclio-ci-tmp-test-branch` is hardcoded until merging with dev
     tests_paths = run_command(context,
@@ -95,6 +101,26 @@ def push_images(context, images_tags, registry_host_and_port):
             # change image to its new tag values
             images_tags[image_index] = new_image_tag
     return images_tags
+
+
+# build and push tester image, necessary for running tests
+def build_push_tester_image(context, registry_host_and_port, git_branch, git_commit):
+
+    # make new image tag, in format of registry_host_and_port/tag_of_image
+    tester_tag = f'{registry_host_and_port}/{NUCLIO_DOCKER_TEST_TAG}{LOCAL_ARCH}'
+
+    # until merge with dev, then it will be-
+    for checkout_value in [git_branch, git_commit]:
+        run_command(context, f'git checkout {checkout_value}', NUCLIO_PATH)
+
+    # build tester
+    run_command(context, f'docker build --file {NUCLIO_DOCKER_TEST_DOCKERFILE_PATH} --tag {tester_tag} .', '/root/go/src/github.com/nuclio')
+
+    # push with the new image tag to local registry, log push result
+    run_command(context, f'docker push {tester_tag}', '/')
+
+    # return tester-tag
+    return tester_tag
 
 
 # returns parsed values- registry_name and image_tag of given input
