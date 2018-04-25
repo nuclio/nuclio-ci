@@ -34,13 +34,13 @@ def handler(context, event):
     # 'no_pull' do nothing
     if pull_mode in MODES_WORTH_PULLING:
 
+        # get job's artifact-urls
         cur.execute('select job from test_cases where oid = %s', (test_case_id,))
         urls_id = get_cursors_one_result(cur, f'select job from test_cases where oid = {test_case_id}')
 
         cur.execute('select artifact_urls from jobs where oid = %s', (urls_id,))
         artifact_urls = json.loads(get_cursors_one_result(cur, f'select artifact_urls from jobs where oid = {urls_id}'))
 
-        context.logger.info_with('urls', urls=artifact_urls)
         for url in artifact_urls:
             run_command(context, f'docker pull {url}')
 
