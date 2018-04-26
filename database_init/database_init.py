@@ -24,10 +24,11 @@ def handler(context, event):
     conn = psycopg2.connect(host=postgres_host, user=postgres_user, password=postgres_password, port=postgres_port)
 
     # proper commands to initialize database
-    commands = ['create table test_cases (runnind_node oid, logs text, result int, job oid,'
+    commands = ['create table test_cases (running_node oid, logs text, result text, job oid,'
                 ' artifact_test text) with oids',
                 'create table nodes (current_test_case oid) with oids',
-                'create table jobs (state int, artifact_urls text) with oids',
+                'create table jobs (state int, artifact_urls text, github_username text,'
+                ' github_url text, commit_sha text) with oids',
                 'create table users (github_username text, slack_username text) with oids']
 
     # cur is the cursor of current connection
