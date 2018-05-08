@@ -7,7 +7,19 @@ spec:
       value: postgres:pass@172.17.0.1:5432
   runtime: "python"
   handler: "run_test_case:handler"
+  volumes:
+  - volume:
+      hostPath:
+        Path: "/var/run/docker.sock"
+    volumeMount:
+      mountPath: "/var/run/docker.sock"
   build:
     commands:
-    - "apk update && apk add --virtual build-deps gcc python-dev musl-dev && apk add postgresql-dev && apk add docker"
+    - "apk add --update --no-cache gcc musl-dev python-dev postgresql-dev docker"
     - "pip install delegator.py psycopg2 requests parse"
+  triggers:
+    sHttpTrigger:
+      maxWorkers: 4
+      kind: "http"
+      attributes:
+        port: 36547

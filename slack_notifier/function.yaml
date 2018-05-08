@@ -1,7 +1,6 @@
 apiVersion: "nuclio.io/v1beta1"
 kind: "Function"
 spec:
-  httpPort: 36545
   env:
     - name: NUCLIO_CI_SLACK_TOKEN
       value: some_nuclio_ci_slack_token
@@ -10,3 +9,9 @@ spec:
   build:
     commands:
     - "pip install requests slackclient"
+  triggers:
+    HttpTrigger:
+      maxWorkers: 4
+      kind: "http"
+      attributes:
+        port: 36545

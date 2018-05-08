@@ -1,7 +1,6 @@
 apiVersion: "nuclio.io/v1beta1"
 kind: "Function"
 spec:
-  httpPort: 36548
   env:
     - name: PGINFO
       value: postgres:pass@172.17.0.1:5432
@@ -9,5 +8,11 @@ spec:
   handler: "run_job:handler"
   build:
     commands:
-    - "apk update && apk add --virtual build-deps gcc python-dev musl-dev && apk add postgresql-dev"
+    - "apk add --update --no-cache gcc python-dev musl-dev postgresql-dev docker"
     - "pip install psycopg2 parse requests"
+  triggers:
+    HttpTrigger:
+      maxWorkers: 4
+      kind: "http"
+      attributes:
+        port: 36548

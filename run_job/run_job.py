@@ -38,7 +38,7 @@ def handler(context, event):
     build_and_push_artifacts_response = json.loads(call_function('build_and_push_artifacts', json.dumps({
         'git_url': request_body.get('clone_url'),
         'git_commit': request_body.get('commit_sha'),
-        'git_branch': request_body.get('git_branch')
+        'git_branch': request_body.get('git_branch'),
     })))
 
     # get artifact_urls & artifact_tests from build_and_push_artifacts_response
@@ -55,7 +55,7 @@ def handler(context, event):
     # check if free nodes selection returns a value, if not -> there are no free nodes, so return
     cur.execute('select oid from nodes where current_test_case = -1')
     if cur.fetchall() is None:
-        context.logger.info('No more free nodes, quiting.')
+        context.logger.info('No more free nodes, quitting.')
         return
 
     # iterate over the tests of the job
@@ -72,7 +72,7 @@ def handler(context, event):
         idle_node = cur.fetchone()
 
         if idle_node is None:
-            context.logger.info('No more idle_nodes, quiting.')
+            context.logger.info('No more idle_nodes, quitting.')
             return
 
         # get first value (relevant one) of the returned postgresSql tuple
