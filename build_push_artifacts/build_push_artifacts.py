@@ -60,8 +60,8 @@ def clone_repo(context, git_url):
 def build_repo(context, git_branch, git_commit):
 
     # checkout to branch & commit if given
-    # for checkout_value in [git_branch, git_commit]:
-    run_command(context, f'git checkout nuclio-ci-tmp-test-branch', NUCLIO_PATH) # checkout {checkout_value}', NUCLIO_PATH)
+    # for checkout_value in [git_branch, git_commit]: run_command(context, 'checkout {checkout_value}', NUCLIO_PATH)
+    run_command(context, f'git checkout nuclio-ci-tmp-test-branch', NUCLIO_PATH)
 
     # build artifacts
     run_command(context, 'export PATH=$PATH:/usr/local/go/bin && make build', NUCLIO_PATH)
@@ -116,7 +116,8 @@ def build_push_tester_image(context, registry_host_and_port, git_branch, git_com
     #     run_command(context, f'git checkout {checkout_value}', NUCLIO_PATH)
 
     # build tester
-    run_command(context, f'docker build --file nuclio/test/docker/tester/Dockerfile --tag {tester_tag} .', '/root/go/src/github.com/nuclio')
+    run_command(context, f'docker build --file nuclio/test/docker/tester/Dockerfile --tag {tester_tag} .',
+                '/root/go/src/github.com/nuclio')
 
     # push with the new image tag to local registry, log push result
     run_command(context, f'docker push {tester_tag}', '/')
