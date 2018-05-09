@@ -11,7 +11,7 @@ spec:
     - "apk add --update --no-cache gcc python-dev musl-dev postgresql-dev docker"
     - "pip install psycopg2 parse requests"
   triggers:
-    HttpTrigger:
+    httpTrigger:
       maxWorkers: 4
       kind: "http"
       attributes:

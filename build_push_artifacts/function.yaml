@@ -13,7 +13,7 @@ spec:
   volumes:
   - volume:
       hostPath:
-        Path: "/var/run/docker.sock"
+        path: "/var/run/docker.sock"
     volumeMount:
       mountPath: "/var/run/docker.sock"
   runtime: "python:3.6"
@@ -31,7 +31,7 @@ spec:
          && go get github.com/nuclio/logger/... && go get github.com/nuclio/nuclio-sdk-go/... && go get github.com/nuclio/amqp/... "
       - "pip install parse delegator.py"
   triggers:
-    HttpTrigger:
+    httpTrigger:
       maxWorkers: 4
       kind: "http"
       attributes:

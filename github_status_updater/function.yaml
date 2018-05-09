@@ -12,7 +12,7 @@ spec:
     commands:
     - "pip install requests"
   triggers:
-    HttpTrigger:
+    httpTrigger:
       maxWorkers: 4
       kind: "http"
       attributes:

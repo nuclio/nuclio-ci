@@ -10,7 +10,7 @@ spec:
     commands:
     - "pip install requests slackclient"
   triggers:
-    HttpTrigger:
+    httpTrigger:
       maxWorkers: 4
       kind: "http"
       attributes:

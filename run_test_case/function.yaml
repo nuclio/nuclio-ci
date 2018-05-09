@@ -10,7 +10,7 @@ spec:
   volumes:
   - volume:
       hostPath:
-        Path: "/var/run/docker.sock"
+        path: "/var/run/docker.sock"
     volumeMount:
       mountPath: "/var/run/docker.sock"
   build:
@@ -18,7 +18,7 @@ spec:
     - "apk add --update --no-cache gcc musl-dev python-dev postgresql-dev docker"
     - "pip install delegator.py psycopg2 requests parse"
   triggers:
-    sHttpTrigger:
+    httpTrigger:
       maxWorkers: 4
       kind: "http"
       attributes:
