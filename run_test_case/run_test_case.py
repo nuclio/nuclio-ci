@@ -39,11 +39,10 @@ def handler(context, event):
 
     context.logger.info_with('Sending data to test_case_complete', test_case=test_case_id, test_case_result=run_result)
     # call test_case_complete
-    # call_function('test_case_complete', json.dumps(
-    # {
-    #     'test_case': test_case_id,
-    #     'test_case_result': 'success' if run_result == 0 else 'failure',
-    # }))
+    call_function('test_case_complete', json.dumps({
+        'test_case': test_case_id,
+        'test_case_result': 'success' if run_result == 0 else 'failure',
+    }))
 
 
 # gets current cursor and command, alerts if returned 0 values
@@ -97,7 +96,7 @@ def call_function(function_name, function_arguments=None):
         'slack_notifier': 36545,
         'build_and_push_artifacts': 36546,
         'run_test_case': 36547,
-        'test_case_complete': 36548
+        'test_case_complete': 36549
     }
 
     # if given_host is specified post it instead of

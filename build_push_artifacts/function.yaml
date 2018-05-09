@@ -18,6 +18,12 @@ spec:
       mountPath: "/var/run/docker.sock"
   runtime: "python:3.6"
   handler: "build_push_artifacts:handler"
+  volumes:
+  - volume:
+      hostPath:
+        Path: "/var/run/docker.sock"
+    volumeMount:
+      mountPath: "/var/run/docker.sock"
   build:
     baseImage: jessie
     commands:

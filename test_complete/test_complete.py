@@ -6,13 +6,9 @@ import parse
 import requests
 
 
-# gets test_id, test)result
-from plainbox.impl import test_resource
-
-
 def handler(context, event):
     request_body = json.loads(event.body)
-    test_id = request_body.get('test_id')
+    test_id = request_body.get('test_case')
     test_result = request_body.get('test_result')
 
     # get a connection to the postgresSql database
@@ -21,30 +17,92 @@ def handler(context, event):
     # cur is the cursor of current connection
     cur = conn.cursor()
 
+    # update test case result
     cur.execute('update test_cases set result=%s where oid=%s', (test_result, test_id))
 
-    if test_result != 'failed':
-        return release_noes()
+    # get running node = current node
+    context.logger.info(f'select running_node from test_cases where oid = {test_id}')
 
-        # lock job for writes so we don’t clash with another test running on another node, since
-        # we are updating the job’s properties
+    cur.execute('select running_node from test_cases where oid = %s', (test_id,))
+    current_node = cur.fetchall()[0]
+
+    cur.execute('select job from test_cases where oid = %s', (test_id,))
+    current_job = cur.fetchall()[0]
+
+    if test_result != 'failed':
+
+        # release the node
+        call_function('release_node', json.dumps({
+            'node_id': current_node,
+        }))
+
+    # lock job for writes so we don’t clash with another test running on another node, since
+    # we are updating the job’s properties
     # test_case.job.lock()
+
+    # get job properties
+    jobs_properties = get_jobs_properties_for_reporting(cur, current_job)
 
     # if the test failed, set the job as failed
     if test_result == 'failed':
 
         cur.execute('update test_cases set result=%s where oid=%s', (test_result, test_id))
 
+        # gets jobs properties, then with them report job result with slack_notifier and github_status_updater
+        report_job_result(cur, jobs_properties, 'pending')
+
+        return
+
+    # if the test succeeded, check if we should run another test on this node
+    # or release it into the wild
+    else:
+
+        # get the next test without a result and without a node
+        next_pending_test_id = get_next_test_id(cur)
+
+        # if there’s no test, we were the last test to succeed
+        if next_pending_test_id is None:
+
+            # report the job success
+            report_job_result(cur, jobs_properties, 'success')
+
+            # release the node
+            call_function('release_node', json.dumps({
+                'node_id': current_node,
+            }))
+
+        else:
+
+            # set the test case running on that node in the db
+            cur.execute('update nodes set current_test_case = %s where oid=%s returning oid', (next_pending_test_id, current_node))
+
+            running_node = cur.fetchall()[0]
+            cur.execute('update test_cases set running_node = %s where oid=%s', (running_node, next_pending_test_id))
+
+            # run the specific test case on the specific node. since this is the first time this node will
+            # run a test, pull is required
+            context.logger.info_with('started test case', Node=current_node, Test_case_id=next_pending_test_id)
+
+            call_function('run_test_case', json.dumps({'node': current_node,
+                                                       'pull_required': False,
+                                                       'test_case_id': next_pending_test_id}))
+
+
+def get_jobs_properties_for_reporting(cur, current_job):
+    cur.execute('select (github_username, github_url, commit_sha) from jobs where oid = %s', (current_job,))
+    jobs_properties = cur.fetchall()
+    return jobs_properties[0]
+
 
 def get_next_test_id(cur):
-    cur.execute('select oid from test_cases where runnind_node is null and result is null')
+    cur.execute('select oid from test_cases where running_node is null and result is null')
     returned_value = cur.fetchone()
 
     # if command returned not-null, return first value of returned tuple,
     return returned_value if returned_value is None else returned_value[0]
 
 
-def report_job_result(cur, github_username, git_url, commit_sha):
+def report_job_result(cur, github_username, git_url, commit_sha, result):
 
     # get slack username
     slack_username = convert_slack_username(cur, github_username)
@@ -57,7 +115,8 @@ def report_job_result(cur, github_username, git_url, commit_sha):
 
     # notify via github that build is running
     call_function('github_status_updater', json.dumps({
-        'state': 'pending',
+
+        'state': result,
         'repo_url': git_url,
         'commit_sha': commit_sha
     }))
@@ -67,28 +126,26 @@ def release_noes(node):
     pass
 
 
-
-
-# returns map with {
-# artifact-tests-url: value,
-# state: state_value,
-# github_url: github_url_value,
-# commit_sha: commit_sha_value,
-# github_username: github_username_value}
-def get_job_properties(cur, test_id):
-    cur.execute('select job from test_cases where oid=%s', (test_id, ))
-    job_properties = cur.fetchone()
-
-    if job_properties is None:
-        return None;
-
-    keys = cur.execute(f'\d test_cases;')
-    map = {}
-
-    for key_index, key in enumerate(keys):
-        map[key] = job_properties[key_index]
-
-    return job_properties[]
+# # returns map with {
+# # artifact-tests-url: value,
+# # state: state_value,
+# # github_url: github_url_value,
+# # commit_sha: commit_sha_value,
+# # github_username: github_username_value}
+# def get_job_properties(cur, test_id):
+#     cur.execute('select job from test_cases where oid=%s', (test_id, ))
+#     job_properties = cur.fetchone()
+#
+#     if job_properties is None:
+#         return None;
+#
+#     keys = cur.execute(f'\d test_cases;')
+#     map = {}
+#
+#     for key_index, key in enumerate(keys):
+#         map[key] = job_properties[key_index]
+#
+#     return map
 
 
 # get slack username from db according to given github_username
@@ -158,7 +215,8 @@ def call_function(function_name, function_arguments=None):
         'github_status_updater': 36544,
         'slack_notifier': 36545,
         'build_and_push_artifacts': 36546,
-        'run_test_case': 36547
+        'run_test_case': 36547,
+        'release_node': 36550
     }
 
     # if given_host is specified post it instead of

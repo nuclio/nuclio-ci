@@ -23,20 +23,22 @@ def handler(context, event):
         raise NameError('Not all requested inputs (git_url, git_commit, git_branch) could be found')
 
     # clone given repo with git clone repo-url
-    clone_repo(context, git_url)
+    clone_repo(context, 'https://github.com/ilaykav/nuclio.git') # git_url)
 
     # building repo with checkout branch / commit and make build
-    build_repo(context, git_branch, git_commit)
+    # build_repo(context, git_branch, git_commit)
 
     # get images tags
     images_tags = get_images_tags(context)
 
     # tag and push images, update images_tags to names pushed to local registry
-    artifact_urls = push_images(context, images_tags, registry_host_and_port)
+    # artifact_urls = push_images(context, images_tags, registry_host_and_port)
 
     # build and push tester image
-    artifact_urls.append(build_push_tester_image(context, registry_host_and_port, git_branch, git_commit))
+    # artifact_urls.append(build_push_tester_image(context, registry_host_and_port, git_branch, git_commit))
 
+    # artifact_urls = push_images(context, images_tags, registry_host_and_port)
+    artifact_urls=[]
     # get tests-paths, `git checkout nuclio-ci-tmp-test-branch` is hardcoded until merging with dev
     tests_paths = run_command(context,
                               'git checkout nuclio-ci-tmp-test-branch && export PATH=$PATH:/usr/local/go/bin && '

@@ -5,14 +5,14 @@ spec:
     - name: PGINFO
       value: postgres:pass@172.17.0.1:5432
   runtime: "python"
-  handler: "test_complete:handler"
-  build:
-    commands:
-    - "apk add --update --no-cache gcc musl-dev python-dev postgresql-dev docker"
-    - "pip install psycopg2 parse requests"
+  handler: "release_node:handler"
   triggers:
     httpTrigger:
       maxWorkers: 4
       kind: "http"
       attributes:
-        port: 36549
+        port: 36550
+  build:
+    commands:
+    - "apk add --update --no-cache gcc musl-dev python-dev postgresql-dev docker"
+    - "pip install psycopg2 parse requests"

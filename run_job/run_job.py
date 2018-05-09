@@ -16,23 +16,27 @@ def handler(context, event):
     cur = conn.cursor()
 
     # insert job and save its OID
-    job_oid = create_job(cur)
+    job_oid = create_job(cur,
+                         request_body.get("github_username"),
+                         request_body.get("git_url"),
+                         request_body.get("commit_sha")
+                         )
 
     # get slack username
-    slack_username = convert_slack_username(cur, request_body.get("github_username"))
-
-    # notify via slack that build is running
-    call_function('slack_notifier', json.dumps({
-        'slack_username': slack_username,
-        'message': 'Your Nuci test started'
-    }))
-
-    # notify via github that build is running
-    call_function('github_status_updater', json.dumps({
-        'state': 'pending',
-        'repo_url': request_body.get('git_url'),
-        'commit_sha': request_body.get('commit_sha')
-    }))
+    # slack_username = convert_slack_username(cur, request_body.get("github_username"))
+    #
+    # # notify via slack that build is running
+    # call_function('slack_notifier', json.dumps({
+    #     'slack_username': slack_username,
+    #     'message': 'Your Nuci test started'
+    # }))
+    #
+    # # notify via github that build is running
+    # call_function('github_status_updater', json.dumps({
+    #     'state': 'pending',
+    #     'repo_url': request_body.get('git_url'),
+    #     'commit_sha': request_body.get('commit_sha')
+    # }))
 
     # build artifacts. this will clone the git repo and build artifacts.
     build_and_push_artifacts_response = json.loads(call_function('build_and_push_artifacts', json.dumps({
@@ -79,7 +83,12 @@ def handler(context, event):
         idle_node = idle_node[0]
 
         # set the test case running on that node in the db
-        cur.execute('update nodes set current_test_case = %s where oid=%s', (test_case, idle_node))
+        cur.execute('update nodes set current_test_case = %s where oid=%s returning oid', (test_case, idle_node))
+
+        running_node = cur.fetchall()[0]
+        cur.execute('update test_cases set running_node = %s where oid=%s', (running_node, test_case))
+
+        context.logger.info(f'update test_cases set running_node = {running_node} where oid={test_case}')
 
         # run the specific test case on the specific node. since this is the first time this node will
         # run a test, pull is required
@@ -109,11 +118,12 @@ def convert_slack_username(db_cursor, github_username):
 
 
 # create job, return id of that job
-def create_job(db_cursor):
+def create_job(db_cursor, github_username, github_url, commit_sha):
 
     # create a db job object with information about this job. set the
     # state to building artifacts
-    db_cursor.execute('insert into jobs (state) values (1) returning oid')
+    db_cursor.execute(f'insert into jobs (state, github_username, github_url, commit_sha) values '
+                      f'(1, %s, %s, %s) returning oid', (github_username, github_url, commit_sha))
 
     # get OID of inserted job
     job_oid = db_cursor.fetchone()[0]
@@ -162,7 +172,7 @@ def call_function(function_name, function_arguments=None):
         'slack_notifier': 36545,
         'build_and_push_artifacts': 36546,
         'run_test_case': 36547,
-        'test_case_complete': 36548
+        'test_case_complete': 36549
     }
 
     # if given_host is specified post it instead of
