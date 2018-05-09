@@ -1,7 +1,6 @@
 apiVersion: "nuclio.io/v1beta1"
 kind: "Function"
 spec:
-  httpPort: 36544
   env:
     - name: REPO_OWNER_USERNAME
       value: some_repo_owner_username
@@ -12,3 +11,9 @@ spec:
   build:
     commands:
     - "pip install requests"
+  triggers:
+    httpTrigger:
+      maxWorkers: 4
+      kind: "http"
+      attributes:
+        port: 36544

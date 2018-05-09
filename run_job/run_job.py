@@ -38,7 +38,7 @@ def handler(context, event):
     build_and_push_artifacts_response = json.loads(call_function('build_and_push_artifacts', json.dumps({
         'git_url': request_body.get('clone_url'),
         'git_commit': request_body.get('commit_sha'),
-        'git_branch': request_body.get('git_branch')
+        'git_branch': request_body.get('git_branch'),
     })))
 
     # get artifact_urls & artifact_tests from build_and_push_artifacts_response
@@ -55,7 +55,7 @@ def handler(context, event):
     # check if free nodes selection returns a value, if not -> there are no free nodes, so return
     cur.execute('select oid from nodes where current_test_case = -1')
     if cur.fetchall() is None:
-        context.logger.info('No more free nodes, quits.')
+        context.logger.info('No more free nodes, quitting.')
         return
 
     # iterate over the tests of the job
@@ -72,7 +72,7 @@ def handler(context, event):
         idle_node = cur.fetchone()
 
         if idle_node is None:
-            context.logger.info('No more idle_nodes, quits.')
+            context.logger.info('No more idle_nodes, quitting.')
             return
 
         # get first value (relevant one) of the returned postgresSql tuple
@@ -83,11 +83,13 @@ def handler(context, event):
 
         # run the specific test case on the specific node. since this is the first time this node will
         # run a test, pull is required
-        context.logger.info_with('started test case', Node=idle_node, Test_case_id=test_case)
+        context.logger.info_with('Starting test case', Node=idle_node, Test_case_id=test_case)
 
-        # call_function('run_test_case', json.dumps({'node': idle_node,
-        #                                            'pull_required': True,
-        #                                            'test_case_id': test_case}))
+        call_function('run_test_case', json.dumps({
+            'node': idle_node,
+            'pull_mode': 'pull',
+            'test_case_id': test_case,
+        }))
 
 
 # get slack username from db according to given github_username
@@ -159,7 +161,8 @@ def call_function(function_name, function_arguments=None):
         'github_status_updater': 36544,
         'slack_notifier': 36545,
         'build_and_push_artifacts': 36546,
-        'run_test_case': 36547
+        'run_test_case': 36547,
+        'test_case_complete': 36548
     }
 
     # if given_host is specified post it instead of
