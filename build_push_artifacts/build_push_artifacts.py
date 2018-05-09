@@ -34,6 +34,9 @@ def handler(context, event):
     # tag and push images, update images_tags to names pushed to local registry
     artifact_urls = push_images(context, images_tags, registry_host_and_port)
 
+    # build and push tester image
+    artifact_urls.append(build_push_tester_image(context, registry_host_and_port, git_branch, git_commit))
+
     # get tests-paths, `git checkout nuclio-ci-tmp-test-branch` is hardcoded until merging with dev
     tests_paths = run_command(context,
                               'git checkout nuclio-ci-tmp-test-branch && export PATH=$PATH:/usr/local/go/bin && '
@@ -57,8 +60,8 @@ def clone_repo(context, git_url):
 def build_repo(context, git_branch, git_commit):
 
     # checkout to branch & commit if given
-    for checkout_value in [git_branch, git_commit]:
-        run_command(context, f'git checkout {checkout_value}', NUCLIO_PATH)
+    # for checkout_value in [git_branch, git_commit]: run_command(context, 'checkout {checkout_value}', NUCLIO_PATH)
+    run_command(context, f'git checkout nuclio-ci-tmp-test-branch', NUCLIO_PATH)
 
     # build artifacts
     run_command(context, 'export PATH=$PATH:/usr/local/go/bin && make build', NUCLIO_PATH)
@@ -95,6 +98,32 @@ def push_images(context, images_tags, registry_host_and_port):
             # change image to its new tag values
             images_tags[image_index] = new_image_tag
     return images_tags
+
+
+# build and push tester image, necessary for running tests
+def build_push_tester_image(context, registry_host_and_port, git_branch, git_commit):
+
+    # make new image tag, in format of registry_host_and_port/tag_of_image
+    tester_tag = f'{registry_host_and_port}/tester:latest-{LOCAL_ARCH}'
+
+    # get tests-paths, `git checkout nuclio-ci-tmp-test-branch` is hardcoded until merging with dev
+    run_command(context,
+                'git checkout nuclio-ci-tmp-test-branch',
+                 NUCLIO_PATH)
+
+    # until merge with dev, then it will be-
+    # for checkout_value in [git_branch, git_commit]:
+    #     run_command(context, f'git checkout {checkout_value}', NUCLIO_PATH)
+
+    # build tester
+    run_command(context, f'docker build --file nuclio/test/docker/tester/Dockerfile --tag {tester_tag} .',
+                '/root/go/src/github.com/nuclio')
+
+    # push with the new image tag to local registry, log push result
+    run_command(context, f'docker push {tester_tag}', '/')
+
+    # return tester-tag
+    return tester_tag
 
 
 # returns parsed values- registry_name and image_tag of given input
