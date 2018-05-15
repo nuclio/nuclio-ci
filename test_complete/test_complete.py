@@ -9,7 +9,7 @@ import requests
 def handler(context, event):
     request_body = json.loads(event.body)
     test_id = request_body.get('test_case')
-    test_result = request_body.get('test_result')
+    test_result = request_body.get('test_case_result')
 
     # get a connection to the postgresSql database
     conn = connect_to_db()
@@ -20,18 +20,14 @@ def handler(context, event):
     # update test case result
     cur.execute('update test_cases set result=%s where oid=%s', (test_result, test_id))
 
-    # get running node = current node
-    context.logger.info(f'select running_node from test_cases where oid = {test_id}')
+    # get current running node & current job
+    current_node, current_job = _get_current_job_and_node(cur, test_id)
 
-    cur.execute('select running_node from test_cases where oid = %s', (test_id,))
-    current_node = cur.fetchall()[0]
+    cur.execute('select state from jobs where oid=%s', (current_job,))
+    job_state = cur.fetchall()[0]
 
-    cur.execute('select job from test_cases where oid = %s', (test_id,))
-    current_job = cur.fetchall()[0]
-
-    if test_result != 'failed':
-
-        # release the node
+    # if test failed - release the node!
+    if job_state == 1:
         call_function('release_node', json.dumps({
             'node_id': current_node,
         }))
@@ -40,18 +36,13 @@ def handler(context, event):
     # we are updating the job’s properties
     # test_case.job.lock()
 
-    # get job properties
-    jobs_properties = get_jobs_properties_for_reporting(cur, current_job)
-
-    # if the test failed, set the job as failed
-    if test_result == 'failed':
-
-        cur.execute('update test_cases set result=%s where oid=%s', (test_result, test_id))
-
-        # gets jobs properties, then with them report job result with slack_notifier and github_status_updater
-        report_job_result(cur, jobs_properties, 'pending')
-
-        return
+    # if test failed, set the job as failed, update test result, report job result with github & slack & release node
+    if test_result == 'failure':
+        cur.execute('update jobs set state=1 where oid=%s', (current_job, ))
+        report_job_result(cur, current_job, 'failed')
+        call_function('release_node', json.dumps({
+            'node_id': current_node,
+        }))
 
     # if the test succeeded, check if we should run another test on this node
     # or release it into the wild
@@ -63,19 +54,18 @@ def handler(context, event):
         # if there’s no test, we were the last test to succeed
         if next_pending_test_id is None:
 
-            # report the job success
-            report_job_result(cur, jobs_properties, 'success')
+            # report job result with github & slack
+            report_job_result(cur, current_job, 'success')
 
             # release the node
             call_function('release_node', json.dumps({
                 'node_id': current_node,
             }))
-
         else:
 
             # set the test case running on that node in the db
-            cur.execute('update nodes set current_test_case = %s where oid=%s returning oid', (next_pending_test_id, current_node))
-
+            cur.execute('update nodes set current_test_case = %s where oid=%s returning oid',
+                        (next_pending_test_id, current_node))
             running_node = cur.fetchall()[0]
             cur.execute('update test_cases set running_node = %s where oid=%s', (running_node, next_pending_test_id))
 
@@ -84,14 +74,8 @@ def handler(context, event):
             context.logger.info_with('started test case', Node=current_node, Test_case_id=next_pending_test_id)
 
             call_function('run_test_case', json.dumps({'node': current_node,
-                                                       'pull_required': False,
+                                                       'pull_mode': 'no_pull',
                                                        'test_case_id': next_pending_test_id}))
-
-
-def get_jobs_properties_for_reporting(cur, current_job):
-    cur.execute('select (github_username, github_url, commit_sha) from jobs where oid = %s', (current_job,))
-    jobs_properties = cur.fetchall()
-    return jobs_properties[0]
 
 
 def get_next_test_id(cur):
@@ -102,7 +86,9 @@ def get_next_test_id(cur):
     return returned_value if returned_value is None else returned_value[0]
 
 
-def report_job_result(cur, github_username, git_url, commit_sha, result):
+def report_job_result(cur, current_job, result):
+
+    github_username, git_url, commit_sha = _get_jobs_properties_for_reporting(cur, current_job)
 
     # get slack username
     slack_username = convert_slack_username(cur, github_username)
@@ -120,59 +106,6 @@ def report_job_result(cur, github_username, git_url, commit_sha, result):
         'repo_url': git_url,
         'commit_sha': commit_sha
     }))
-
-
-def release_noes(node):
-    pass
-
-
-# # returns map with {
-# # artifact-tests-url: value,
-# # state: state_value,
-# # github_url: github_url_value,
-# # commit_sha: commit_sha_value,
-# # github_username: github_username_value}
-# def get_job_properties(cur, test_id):
-#     cur.execute('select job from test_cases where oid=%s', (test_id, ))
-#     job_properties = cur.fetchone()
-#
-#     if job_properties is None:
-#         return None;
-#
-#     keys = cur.execute(f'\d test_cases;')
-#     map = {}
-#
-#     for key_index, key in enumerate(keys):
-#         map[key] = job_properties[key_index]
-#
-#     return map
-
-
-# get slack username from db according to given github_username
-def convert_slack_username(db_cursor, github_username):
-
-    # convert github username to slack username
-    db_cursor.execute('select slack_username from users where github_username=%s', (github_username, ))
-
-    # get slack username of given github username
-    slack_username = db_cursor.fetchone()
-
-    if slack_username is None:
-        raise ValueError('Failed converting git username to slack username')
-
-    # get first value of the postgresSQL tuple answer
-    return slack_username[0]
-
-
-
-# gets current cursor and command, alerts if returned 0 values
-def get_cursors_one_result(cur, cmd):
-    returned_value = cur.fetchone()
-
-    if returned_value is None:
-        return Exception(cmd)
-
-    return returned_value[0]
 
 
 # connect to db, return psycopg2 connection
@@ -227,3 +160,43 @@ def call_function(function_name, function_arguments=None):
     return response.text
 
 
+def _get_current_job_and_node(cur, test_id):
+    cur.execute('select running_node from test_cases where oid = %s', (test_id,))
+    current_node = cur.fetchall()[0]
+
+    cur.execute('select job from test_cases where oid = %s', (test_id,))
+    current_job = cur.fetchall()[0]
+
+    return_array = [current_node, current_job]
+
+    for value_index, current_value in enumerate([current_node, current_job]):
+        if (isinstance(current_value, list) or isinstance(current_value, tuple)) and len(current_value) != 0:
+            return_array[value_index] = current_value[0]
+
+    return return_array
+
+
+def _get_jobs_properties_for_reporting(cur, current_job):
+    jobs_properties = []
+    needed_parameters = ['github_username', 'github_url', 'commit_sha']
+    for parameter in needed_parameters:
+        cur.execute(f'select {parameter} from jobs where oid = %s', (current_job,))
+        jobs_properties.append(cur.fetchall()[0][0])
+
+    return jobs_properties
+
+
+# get slack username from db according to given github_username
+def convert_slack_username(db_cursor, github_username):
+
+    # convert github username to slack username
+    db_cursor.execute('select slack_username from users where github_username=%s', (github_username, ))
+
+    # get slack username of given github username
+    slack_username = db_cursor.fetchone()
+
+    if slack_username is None:
+        raise ValueError('Failed converting git username to slack username')
+
+    # get first value of the postgresSQL tuple answer
+    return slack_username[0]

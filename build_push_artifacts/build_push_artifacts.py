@@ -40,10 +40,7 @@ def handler(context, event):
     # artifact_urls = push_images(context, images_tags, registry_host_and_port)
     artifact_urls=[]
     # get tests-paths, `git checkout nuclio-ci-tmp-test-branch` is hardcoded until merging with dev
-    tests_paths = run_command(context,
-                              'git checkout nuclio-ci-tmp-test-branch && export PATH=$PATH:/usr/local/go/bin && '
-                              'make print-tests-paths',
-                              NUCLIO_PATH).split('\n')
+    tests_paths = _get_tests_paths(context)
 
     # clean directory
     run_command(context, 'rm -r  /root/go/src/', '/')
@@ -166,3 +163,13 @@ def run_command(context, cmd, cwd=None, env=None):
     context.logger.info_with('Command executed successfully', Command=cmd, Exit_code=proc.return_code, Stdout=proc.out)
 
     return proc.out
+
+
+def _get_tests_paths(context):
+    tests_paths = run_command(context,
+                'git checkout nuclio-ci-tmp-test-branch && export PATH=$PATH:/usr/local/go/bin && '
+                'make print-tests-paths',
+                NUCLIO_PATH).split('\n')
+
+    # filter out all non-paths
+    return list(filter(lambda path: path[:3] == 'pkg', tests_paths))

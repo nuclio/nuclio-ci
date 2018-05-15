@@ -23,37 +23,26 @@ def handler(context, event):
 
     # gather test case result
     cur.execute('select current_test_case from nodes where oid=%s', (current_node_id,))
-    current_test_case = cur.fetchall()[0]
+    current_test_case = cur.fetchall()[0][0]
 
     # get job
     cur.execute('select job from test_cases where oid=%s', (current_test_case,))
-    current_job_id = cur.fetchall()[0]
+    current_job_id = cur.fetchall()[0][0]
 
     # first - check if there is test need to be done in our job's artifact test
     cur.execute('select artifact_test from test_cases where running_node is null and job = %s', (current_job_id,))
-    artifact_test = None if cur.fetchall() is None else cur.fetchall()[0]
+    artifact_test = cur.fetchall()[0]
+
+    # if got tuple there are more tests available on current job, so take first value of it - the test oid itself
+    artifact_test = None if not isinstance(artifact_test, tuple) else artifact_test[0]
 
     # if artifact is none, no other tests required in our job, start new test-case
     if artifact_test is None:
-        run_foreign_test_case(cur, current_node_id)
-
-    # found another test need to be done in same job - run_test_case without pull required
+        _run_foreign_test_case(cur)
+    # else, found another test need to be done in same job - run_test_case without pull required
     else:
-        call_function('run_test_case', json.dumps({'node': current_node_id,
-                                                   'pull_required': False,
-                                                   'test_case_id': current_test_case }))
-
-    # if not found any job - leave the node idle
-    return
-
-
-def run_foreign_test_case(cur, current_node_id):
-    cur.execute('select oid from test_cases where running_node is null')
-    new_test_case_id = None if cur.fetchall() is None else cur.fetchall()[0]
-
-    call_function('run_test_case', json.dumps({'node': current_node_id,
-                                               'pull_required': True,
-                                               'test_case_id': new_test_case_id}))
+        call_function('run_test_case', json.dumps({'pull_mode': 'no_pull',
+                                                   'test_case_id': current_test_case}))
 
 
 # connect to db, return psycopg2 connection
@@ -105,5 +94,18 @@ def call_function(function_name, function_arguments=None):
                              data=function_arguments)
 
     return response.text
+
+
+def _run_foreign_test_case(cur):
+    cur.execute('select oid from test_cases where running_node is null')
+    new_test_case_id = cur.fetchall()
+
+    if new_test_case_id is None:
+        return
+    else:
+        new_test_case_id = new_test_case_id[0][0]
+
+    call_function('run_test_case', json.dumps({'pull_mode': 'pull',
+                                               'test_case_id': new_test_case_id}))
 
 

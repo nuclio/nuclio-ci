@@ -41,7 +41,7 @@ def handler(context, event):
     # call test_case_complete
     call_function('test_case_complete', json.dumps({
         'test_case': test_case_id,
-        'test_case_result': 'success' if run_result == 0 else 'failure',
+        'test_case_result': 'success' if run_result == '0' else 'failure',
     }))
 
 
@@ -59,7 +59,7 @@ def get_cursors_one_result(cur, cmd):
 def get_run_result_from_logs(logs):
 
     # separate to lines
-    run_result = logs.split('/n')
+    run_result = logs.split('\n')
 
     # filter all empty lines
     run_result = list(filter(lambda x: x, run_result))
