@@ -57,7 +57,7 @@ def handler(context, event):
         cur.execute('insert into test_cases (job, artifact_test) values (%s, %s)', (job_oid, artifact_test))
 
     # check if free nodes selection returns a value, if not -> there are no free nodes, so return
-    cur.execute('select oid from nodes where current_test_case = -1')
+    cur.execute('select oid from nodes where current_test_case is NULL')
     if cur.fetchall() is None:
         context.logger.info('No more free nodes, quitting.')
         return
@@ -70,7 +70,7 @@ def handler(context, event):
         test_case = test_case[0]
 
         # get an idle node
-        cur.execute(f'select oid from nodes where current_test_case = -1')
+        cur.execute(f'select oid from nodes where current_test_case is NULL')
 
         # if there’s no idle node, we’re done
         idle_node = cur.fetchone()

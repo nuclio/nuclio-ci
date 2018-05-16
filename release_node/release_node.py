@@ -107,7 +107,7 @@ def _run_foreign_test_case(cur, current_node):
 
     # leave idle
     if new_test_case_id is None:
-        cur.execute('update nodes set current_test_case = -1 where oid=%s', (current_node, ))
+        cur.execute('update nodes set current_test_case = NULL where oid=%s', (current_node, ))
     else:
         new_test_case_id = new_test_case_id[0][0]
 
