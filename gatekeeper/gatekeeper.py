@@ -11,7 +11,7 @@ LAUNCH_WORD = '@nuci approved'
 def handler(context, event):
 
     # Load data from given json, init relevant variables
-    webhook_report = json.loads(event.body)
+    webhook_report = event.body
     session = create_github_authenticated_session()
     pr = Pr(webhook_report, session)
 

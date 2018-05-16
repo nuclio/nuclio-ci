@@ -13,6 +13,11 @@ spec:
         path: "/var/run/docker.sock"
     volumeMount:
       mountPath: "/var/run/docker.sock"
+  - volume:
+      hostPath:
+        path: "/var/lib/docker"
+    volumeMount:
+      mountPath: "/var/lib/docker"
   build:
     commands:
     - "apk add --update --no-cache gcc musl-dev python-dev postgresql-dev docker"

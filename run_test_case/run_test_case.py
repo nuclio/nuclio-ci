@@ -123,7 +123,7 @@ def parse_env_var_info(formatted_string):
 
 
 # get env in map format {"key1":"value1"}
-def run_command(context, cmd, cwd=None, env=None):
+def run_command(context, cmd, cwd=None, env=None, accept_error=False):
 
     context.logger.info_with('Running command', cmd=cmd, cwd=cwd, env=env)
 
@@ -142,11 +142,14 @@ def run_command(context, cmd, cwd=None, env=None):
     proc = delegator.run(cmd, env=env)
 
     # if we got here, the process completed
-    if proc.return_code != 0:
+    if not accept_error and proc.return_code != 0:
         raise ValueError(f'Command failed. cmd({cmd}) result({proc.return_code}), log({proc.out})')
 
     # log result
-    context.logger.info_with('Command executed successfully', Command=cmd, Exit_code=proc.return_code, Stdout=proc.out)
+    if proc.return_code == 0:
+        context.logger.info_with('Command executed successfully', Command=cmd, Exit_code=proc.return_code, Stdout=proc.out)
+    else:
+        context.logger.info_with('Command failed', Command=cmd, Exit_code=proc.return_code, Stdout=proc.out)
 
     return proc.out
 
@@ -168,7 +171,8 @@ def _run_next_test_case(context, test_case_id, cur):
                                 f'--volume /tmp:/tmp --workdir /go/src/github.com/nuclio/nuclio --env '
                                 f'NUCLIO_TEST_HOST=172.17.0.1 localhost:5000/tester:latest-amd64'
                                 f' /bin/bash -c "make test-undockerized '
-                                f'NUCLIO_TEST_NAME=github.com/nuclio/nuclio/{artifact_test}" && echo $?'))
+                                f'NUCLIO_TEST_NAME=github.com/nuclio/nuclio/{artifact_test}" && echo $?',
+                       accept_error=True))
 
 
 # pull images of given test case,
