@@ -14,5 +14,5 @@ spec:
         port: 36550
   build:
     commands:
-    - "apk add --update --no-cache gcc musl-dev python-dev postgresql-dev docker"
+    - "apk add --update --no-cache gcc musl-dev python-dev postgresql-dev"
     - "pip install psycopg2 parse requests"

@@ -23,20 +23,20 @@ def handler(context, event):
                          )
 
     # get slack username
-    # slack_username = convert_slack_username(cur, request_body.get("github_username"))
-    #
-    # # notify via slack that build is running
-    # call_function('slack_notifier', json.dumps({
-    #     'slack_username': slack_username,
-    #     'message': 'Your Nuci test started'
-    # }))
-    #
-    # # notify via github that build is running
-    # call_function('github_status_updater', json.dumps({
-    #     'state': 'pending',
-    #     'repo_url': request_body.get('git_url'),
-    #     'commit_sha': request_body.get('commit_sha')
-    # }))
+    slack_username = convert_slack_username(cur, request_body.get("github_username"))
+
+    # notify via slack that build is running
+    call_function('slack_notifier', json.dumps({
+        'slack_username': slack_username,
+        'message': 'Your Nuci test started'
+    }))
+
+    # notify via github that build is running
+    call_function('github_status_updater', json.dumps({
+        'state': 'pending',
+        'repo_url': request_body.get('git_url'),
+        'commit_sha': request_body.get('commit_sha')
+    }))
 
     # build artifacts. this will clone the git repo and build artifacts.
     build_and_push_artifacts_response = json.loads(call_function('build_and_push_artifacts', json.dumps({

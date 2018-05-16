@@ -23,7 +23,7 @@ def handler(context, event):
         raise NameError('Not all requested inputs (git_url, git_commit, git_branch) could be found')
 
     # clone given repo with git clone repo-url
-    clone_repo(context, 'https://github.com/ilaykav/nuclio.git') # git_url)
+    clone_repo(context, git_url)
 
     # building repo with checkout branch / commit and make build
     build_repo(context, git_branch, git_commit)
