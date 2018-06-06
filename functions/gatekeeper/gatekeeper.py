@@ -12,13 +12,17 @@ LAUNCH_WORD = '@nuci approved'
 # get a webhook report in event.body, launch nuci if needed & permitted
 def handler(context, event):
 
+
     # Load data from given json, init relevant variables
     webhook_report = event.body
+    testing = is_test(webhook_report)
     session = create_github_authenticated_session()
     pr = Pr(webhook_report, session)
 
     # check if event is not relevant don't do anything
-    if not event_warrants_starting_integration_test(webhook_report):
+    if not event_warrants_starting_integration_test(webhook_report) or pr._get_comments_url() is None:
+        if testing:
+            return context.Response(body={'Nuci not permitted to start'})
         return
 
     # check if action allowed to run_integration_tests, start nuci if true
@@ -29,19 +33,28 @@ def handler(context, event):
 
             # add comment only if not added yet asking for whitelister to whitelist the PR
             pr.add_comment(PERMISSION_SEQUENCE, exclusive=True)
+            if testing:
+                return context.Response(body={'Nuci not permitted to start'})
             return
 
     # event body should contain: git_url, github_username, commit_sha, git_branch
     context.logger.info("Nuci started")
 
-    context.platform.call_function("run-job", nuclio_sdk.Event(body={
-        "github_username": webhook_report["pull_request"]["user"]["login"],
-        "git_url": webhook_report["pull_request"]["html_url"],
-        "commit_sha": webhook_report["pull_request"]["head"]["sha"],
-        "git_branch": webhook_report["pull_request"]["head"]["ref"],
-        "clone_url": webhook_report["pull_request"]["head"]["repo"]["git_url"]
-    }))
+    if testing:
+        return context.Response(body={'Nuci started'})
+    else:
+        context.platform.call_function("run-job", nuclio_sdk.Event(body={
+            "github_username": webhook_report["pull_request"]["user"]["login"],
+            "git_url": webhook_report["pull_request"]["html_url"],
+            "commit_sha": webhook_report["pull_request"]["head"]["sha"],
+            "git_branch": webhook_report["pull_request"]["head"]["ref"],
+            "clone_url": webhook_report["pull_request"]["head"]["repo"]["git_url"]
+        }))
 
+def is_test(webhook_report):
+    if webhook_report.get('testing_nuclio_ci') is None:
+        return False
+    return True
 
 # check if anyone from whitelist allowed run integration tests
 def check_pr_whitelisted(pr, launch_word):
@@ -133,16 +146,18 @@ class Pr(object):
     # return comments_url of the PR
     def _get_comments_url(self):
 
+        if self._webhook.get('issue') is None:
+            return None
+
         action_type = self._webhook['action']
         # handle cases where jsons are different
         if action_type == 'created':
+
             print(self._webhook['issue']['pull_request']['comments_url'])
             return self._webhook['issue']['pull_request']['comments_url']
 
         print(self._webhook['issue']['pull_request']['comments_url'])
         return self._webhook['pull_request']['comments_url']
-
-
 
 
 def init_context(context):

@@ -37,14 +37,12 @@ def handler(context, event):
     # build and push tester image
     artifact_urls.append(build_push_tester_image(context, registry_host_and_port, git_branch, git_commit))
 
-    # artifact_urls = push_images(context, images_tags, registry_host_and_port)
-    # get tests-paths, `git checkout nuclio-ci-tmp-test-branch` is hardcoded until merging with dev
     tests_paths = _get_tests_paths(context)
 
     # clean directory
     common.nuclio_helper_functions.run_command(context, 'rm -r  /root/go/src/', '/')
 
-    return context.Response(body=json.dumps({'artifact_urls': artifact_urls, 'tests_paths': tests_paths}))
+    return context.Response(body={'artifact_urls': artifact_urls, 'tests_paths': tests_paths})
 
 
 # clone given git_url
@@ -60,6 +58,7 @@ def build_repo(context, git_branch, git_commit):
 
     # checkout to branch & commit if given
     # for checkout_value in [git_branch, git_commit]: common.nuclio_helper_functions.run_command(context, 'checkout {checkout_value}', NUCLIO_PATH)
+    # get tests-paths, `git checkout nuclio-ci-tmp-test-branch` is hardcoded until merging with dev
     common.nuclio_helper_functions.run_command(context, f'git checkout nuclio-ci-tmp-test-branch', NUCLIO_PATH)
 
     # build artifacts
@@ -70,10 +69,10 @@ def build_repo(context, git_branch, git_commit):
 def get_images_tags(context):
 
     # get all docker images
-    images = common.nuclio_helper_functions.run_command(context, 'make print-docker-images', NUCLIO_PATH)
+    images = common.nuclio_helper_functions.run_command(context, 'make print-docker-images', NUCLIO_PATH).split('\n')
 
-    # convert response to list by splitting all \n
-    return images.split('\n')
+    # filter out all non-paths, comments and commands, etc.
+    return list(filter(lambda path: path[:5] == 'nuclio', images))
 
 
 # get image tags, tag the images with tag fit local registry push convention and push to given registry_host_and_port
@@ -131,7 +130,7 @@ def parse_docker_image_name(parse_input):
 
     # raise NameError if image parse was unsuccessful
     if parse_result is None:
-        raise NameError(f'Image tag {image} is not in format of nuclio/tag-of-image')
+        raise NameError(f'Image tag {parse_input} is not in format of nuclio/tag-of-image')
 
     return list(parse_result)
 

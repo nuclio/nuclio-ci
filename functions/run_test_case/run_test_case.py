@@ -18,7 +18,7 @@ def handler(context, event):
     cur = context.user_data.conn.cursor()
 
     # pull tester image
-    common.nuclio_helper_functions.run_command(context, f'docker pull localhost:5000/tester:latest-amd64')
+    # common.nuclio_helper_functions.run_command(context, f'docker pull localhost:5000/tester:latest-amd64')
 
     if _pull_mode_requires_pulling(pull_mode):
         _pull_images(context, cur, test_case_id)

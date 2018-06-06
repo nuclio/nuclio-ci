@@ -42,9 +42,10 @@ def handler(context, event):
         }
     ))
 
+    context.logger.info(build_and_push_artifacts_response.body)
     # get artifact_urls & artifact_tests from build_and_push_artifacts_response
-    artifact_urls = build_and_push_artifacts_response.body.get('artifact_urls')
-    artifact_tests = build_and_push_artifacts_response.body.get('tests_paths')
+    artifact_urls = build_and_push_artifacts_response.body['artifact_urls']
+    artifact_tests = build_and_push_artifacts_response.body['tests_paths']
 
     # save artifact URLs in job
     cur.execute('update jobs set artifact_urls = %s where oid = %s', (json.dumps(artifact_urls), job_oid))
