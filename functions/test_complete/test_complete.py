@@ -1,21 +1,15 @@
-import psycopg2
-import psycopg2.sql
-import os
 import json
-import parse
-import requests
-
+import common.psycopg2_functions
+import common.nuclio_helper_functions
+import nuclio_sdk
 
 def handler(context, event):
-    request_body = json.loads(event.body)
+    request_body = event.body
     test_id = request_body.get('test_case')
     test_result = request_body.get('test_case_result')
 
-    # get a connection to the postgresSql database
-    conn = connect_to_db()
-
     # cur is the cursor of current connection
-    cur = conn.cursor()
+    cur = context.user_data.conn.cursor()
 
     # update test case result
     cur.execute('update test_cases set result=%s where oid=%s', (test_result, test_id))
@@ -24,8 +18,8 @@ def handler(context, event):
     current_node, current_job, job_state = _get_current_job_node_state(cur, test_id)
 
     # if test failed - release the node!
-    if job_state == 1:
-        call_function('release_node', json.dumps({
+    if job_state == 'failed':
+        context.platform.call_function('release-node',  nuclio_sdk.Event(body={
             'node_id': current_node,
         }))
 
@@ -35,7 +29,7 @@ def handler(context, event):
 
     # if test failed, set the job as failed, update test result, report job result with github & slack & release node
     if test_result == 'failure':
-        _test_failed(cur, current_job, current_node)
+        _test_failed(context, cur, current_job, current_node)
 
     # if the test succeeded, check if we should run another test on this node
     # or release it into the wild
@@ -46,7 +40,7 @@ def handler(context, event):
 
         # if there’s no test, we were the last test to succeed
         if next_pending_test_id is None:
-            _job_succeeded(cur, current_job, current_node)
+            _job_succeeded(context, cur, current_job, current_node)
         else:
             _job_in_progress(context, cur, next_pending_test_id, current_node)
 
@@ -59,93 +53,25 @@ def get_next_test_id(cur):
     return returned_value if returned_value is None else returned_value[0]
 
 
-def report_job_result(cur, current_job, result):
+def report_job_result(context, cur, current_job, result):
     github_username, git_url, commit_sha = _get_jobs_properties_for_reporting(cur, current_job)
 
     # get slack username
-    slack_username = convert_slack_username(cur, github_username)
+    slack_username = common.nuclio_helper_functions.convert_slack_username(cur, github_username)
 
     # notify via slack that build is running
-    call_function('slack_notifier', json.dumps({
+    context.platform.call_function('slack-notifier',  nuclio_sdk.Event(body={
         'slack_username': slack_username,
         'message': 'Your Nuci test started'
     }))
 
     # notify via github that build is running
-    call_function('github_status_updater', json.dumps({
+    context.platform.call_function('github-status-updater', nuclio_sdk.Event(body={
 
         'state': result,
         'repo_url': git_url,
         'commit_sha': commit_sha
     }))
-
-
-# connect to db, return psycopg2 connection
-def connect_to_db():
-
-    # get postgres connection information from container's environment vars
-    postgres_info = parse_env_var_info(os.environ.get('PGINFO'))
-
-    # raise NameError if env var not found, or found in wrong format
-    if postgres_info is None:
-        raise ValueError('Local variable PGINFO in proper format (user:password@host:port or user:password@host)'
-                         ' could not be found')
-
-    postgres_user, postgres_password, postgres_host, postgres_port = postgres_info
-
-    # connect to postgres database, set autocommit to True to avoid committing
-    conn = psycopg2.connect(host=postgres_host, user=postgres_user, password=postgres_password, port=postgres_port)
-    conn.autocommit = True
-
-    return conn
-
-
-def parse_env_var_info(formatted_string):
-    if formatted_string is not None:
-
-        # check if default formatted string given
-        if parse.parse('{}:{}@{}:{}', formatted_string) is not None:
-            return list(parse.parse('{}:{}@{}:{}', formatted_string))
-
-        # if not, try get same format without the port specification
-        if parse.parse('{}:{}@{}', formatted_string) is not None:
-            return list(parse.parse('{}:{}@{}', formatted_string)) + [5432]
-    return None
-
-
-# calls given function with given arguments, returns body of response
-def call_function(function_name, function_arguments=None):
-    functions_ports = {
-        'database_init': 36543,
-        'github_status_updater': 36544,
-        'slack_notifier': 36545,
-        'build_and_push_artifacts': 36546,
-        'run_test_case': 36547,
-        'release_node': 36550
-    }
-
-    # if given_host is specified post it instead of
-    given_host = os.environ.get('DOCKER_HOST', '172.17.0.1')
-    response = requests.post(f'http://{given_host}:{functions_ports[function_name]}',
-                             data=function_arguments)
-
-    return response.text
-
-
-# get slack username from db according to given github_username
-def convert_slack_username(db_cursor, github_username):
-
-    # convert github username to slack username
-    db_cursor.execute('select slack_username from users where github_username=%s', (github_username, ))
-
-    # get slack username of given github username
-    slack_username = db_cursor.fetchone()
-
-    if slack_username is None:
-        raise ValueError('Failed converting git username to slack username')
-
-    # get first value of the postgresSQL tuple answer
-    return slack_username[0]
 
 
 def _get_current_job_node_state(cur, test_id):
@@ -182,27 +108,31 @@ def _job_in_progress(context, cur, next_pending_test_id, current_node):
     # run the specific test case on the specific node. since this is the first time this node will
     # run a test, pull is required
     context.logger.info_with('started test case', Node=current_node, Test_case_id=next_pending_test_id)
-    call_function('run_test_case', json.dumps({'node': current_node,
+    context.platform.call_function('run-test-case',  nuclio_sdk.Event(body={'node': current_node,
                                                'pull_mode': 'no_pull',
                                                'test_case_id': next_pending_test_id}))
 
 
-def _job_succeeded(cur, current_job, current_node):
+def _job_succeeded(context, cur, current_job, current_node):
     cur.execute('update jobs set state=0 where oid=%s', (current_job,))
 
     # report job result with github & slack
-    report_job_result(cur, current_job, 'success')
+    report_job_result(context, cur, current_job, 'success')
 
     # release the node
-    call_function('release_node', json.dumps({
+    context.platform.call_function('release-node',  nuclio_sdk.Event(body={
         'node_id': current_node,
     }))
 
 
-def _test_failed(cur, current_job, current_node):
+def _test_failed(context, cur, current_job, current_node):
     cur.execute('update jobs set state=1 where oid=%s', (current_job,))
-    report_job_result(cur, current_job, 'failed')
-    call_function('release_node', json.dumps({
+    report_job_result(context, cur, current_job, 'failed')
+    context.platform.call_function('release_node',  nuclio_sdk.Event(body={
         'node_id': current_node,
     }))
+
+
+def init_context(context):
+    setattr(context.user_data, 'conn', common.psycopg2_functions.get_psycopg2_connection())
 

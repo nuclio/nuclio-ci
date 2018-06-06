@@ -1,7 +1,9 @@
+import common.psycopg2_functions
 import os
 import json
 import parse
 import requests
+import nuclio_sdk
 
 PERMISSION_SEQUENCE = 'Can one of the admins approve running tests for this PR?'
 LAUNCH_WORD = '@nuci approved'
@@ -30,15 +32,6 @@ def handler(context, event):
             return
 
     # event body should contain: git_url, github_username, commit_sha, git_branch
-<<<<<<< HEAD:gatekeeper/gatekeeper.py
-    context.logger.info('Nuci started')
-    call_function('run_job', json.dumps({
-        'github_username': webhook_report['pull_request']['user']['login'],
-        'git_url': webhook_report['pull_request']['html_url'],
-        'commit_sha': webhook_report['pull_request']['head']['sha'],
-        'git_branch': webhook_report['pull_request']['head']['ref'],
-        'clone_url': webhook_report['pull_request']['head']['repo']['git_url']
-=======
     context.logger.info("Nuci started")
 
     context.platform.call_function("run-job", nuclio_sdk.Event(body={
@@ -47,7 +40,6 @@ def handler(context, event):
         "commit_sha": webhook_report["pull_request"]["head"]["sha"],
         "git_branch": webhook_report["pull_request"]["head"]["ref"],
         "clone_url": webhook_report["pull_request"]["head"]["repo"]["git_url"]
->>>>>>> 35a3744... start testing:functions/gatekeeper/gatekeeper.py
     }))
 
 
@@ -151,26 +143,8 @@ class Pr(object):
         return self._webhook['pull_request']['comments_url']
 
 
-<<<<<<< HEAD:gatekeeper/gatekeeper.py
-# calls given function with given arguments, returns body of response
-def call_function(function_name, function_arguments=None):
-    functions_ports = {
-        'database_init': 36543,
-        'github_status_updater': 36544,
-        'slack_notifier': 36545,
-        'build_and_push_artifacts': 36546,
-        'run_test_case': 36547,
-        'run_job': 36548
-    }
-
-    # if given_host is specified post it instead of
-    given_host = os.environ.get('DOCKER_HOST', '172.17.0.1')
-    response = requests.post(f'http://{given_host}:{functions_ports[function_name]}', data=function_arguments)
-=======
 
 
 def init_context(context):
     setattr(context.user_data, 'conn', common.psycopg2_functions.get_psycopg2_connection())
->>>>>>> 35a3744... start testing:functions/gatekeeper/gatekeeper.py
 
-    return response.text

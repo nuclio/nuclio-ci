@@ -9,7 +9,7 @@ SLACK_CLIENT = None
 # event should contain: slack_username of target, message for message to be sent
 def handler(context, event):
     global SLACK_CLIENT
-    request_info = json.loads(event.body)
+    request_info = event.body
     slack_username = request_info.get('slack_username')
     message_to_send = request_info.get('message')
 
@@ -45,19 +45,3 @@ def handler(context, event):
         raise requests.ConnectionError(
             f'failed to send message to user {slack_username}, response from slack - {slackbot_send_result}')
 
-
-# calls given function with given arguments, returns body of response
-def call_function(function_name, function_arguments=None):
-    functions_ports = {
-        'database_init': 36543,
-        'github_status_updater': 36544,
-        'slack_notifier': 36545,
-        'build_and_push_artifacts': 36546,
-        'run_test_case': 36547
-    }
-
-    # if given_host is specified post it instead of
-    given_host = os.environ.get('DOCKER_HOST', '172.17.0.1')
-    response = requests.post(f'http://{given_host}:{functions_ports[function_name]}', data=function_arguments)
-
-    return response.text

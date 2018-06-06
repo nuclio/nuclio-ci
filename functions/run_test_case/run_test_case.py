@@ -83,7 +83,7 @@ def _run_next_test_case(context, test_case_id, cur):
                                 f'NUCLIO_TEST_HOST=172.17.0.1 localhost:5000/tester:latest-amd64'
                                 f' /bin/bash -c "make test-undockerized '
                                 f'NUCLIO_TEST_NAME=github.com/nuclio/nuclio/{artifact_test}" && echo $?',
-                       accept_error=True))
+                       allow_error=True))
 
 
 # pull images of given test case,

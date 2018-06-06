@@ -7,17 +7,17 @@ spec:
       value: postgres:pass@172.17.0.1:5432
   runtime: "python"
   handler: "run_test_case:handler"
-  volumes:
-  - volume:
-      hostPath:
-        path: "/var/run/docker.sock"
-    volumeMount:
-      mountPath: "/var/run/docker.sock"
-  - volume:
-      hostPath:
-        path: "/var/lib/docker"
-    volumeMount:
-      mountPath: "/var/lib/docker"
+#  volumes:
+#  - volume:
+#      hostPath:
+#        path: "/var/run/docker.sock"
+#    volumeMount:
+#      mountPath: "/var/run/docker.sock"
+#  - volume:
+#      hostPath:
+#        path: "/var/lib/docker"
+#    volumeMount:
+#      mountPath: "/var/lib/docker"
   build:
     commands:
     - "apk add --update --no-cache gcc musl-dev python-dev postgresql-dev docker"

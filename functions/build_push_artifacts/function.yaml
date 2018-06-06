@@ -10,12 +10,6 @@ spec:
       value: /root/go
     - name: NUCLIO_PATH
       value: /root/go/src/github.com/nuclio/nuclio
-  volumes:
-  - volume:
-      hostPath:
-        path: "/var/run/docker.sock"
-    volumeMount:
-      mountPath: "/var/run/docker.sock"
   runtime: "python:3.6"
   handler: "build_push_artifacts:handler"
   volumes:
