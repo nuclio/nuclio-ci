@@ -16,14 +16,19 @@ import unittest
 import os
 import copy
 
+import common.psycopg2_functions
 import nuclio_sdk.test
 
 
 class TestCase(unittest.TestCase):
 
     def setUp(self):
+
         self._platform = nuclio_sdk.test.Platform()
         self._environ_copy = copy.copy(os.environ)
+
+        os.environ['PGINFO'] = 'postgres:pass@172.17.0.1:5432'
+        setattr(self._platform.context.user_data, 'conn', common.psycopg2_functions.get_psycopg2_connection())
 
     def tearDown(self):
         os.environ = self._environ_copy

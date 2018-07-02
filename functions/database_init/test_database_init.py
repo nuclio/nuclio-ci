@@ -1,10 +1,13 @@
-import nuclio_sdk.test
+
+import nuclio_sdk
 import common.nuclio_helper_functions
+import common.psycopg2_functions
+import os
 
-class TestCase(common.test.TestCase):
+class TestCase(nuclio_sdk.TestCase):
 
-    def test_check_datgabse(self):
-        db_cursor = self.__platform.context.user_data.conn.get_cursor()
+    def test_check_database(self):
+        db_cursor = self._platform.context.user_data.conn.cursor()
         db_cursor.execute(f'insert into test_cases (running_node, logs, result, job, artifact_test) values '
                           f'(1, \'test_logs_text\', \'test_result_text\', 123, \'test_artifact_test text\')')
         db_cursor.execute(f'insert into nodes (current_test_case) values (1)')
@@ -13,11 +16,3 @@ class TestCase(common.test.TestCase):
                           f'\'test_github_username\', \'github_url\', \'commit_sha\')')
         db_cursor.execute(f'insert into users (github_username, slack_username)  values '
                           f'(\'test_github_username\', \'test_slack_username\') ')
-
-        # get OID of inserted job
-        job_oid = db_cursor.fetchone()[0]
-
-        return job_oid
-
-def init_context(context):
-    setattr(context.user_data, 'conn', common.psycopg2_functions.get_psycopg2_connection())

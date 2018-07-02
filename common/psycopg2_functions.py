@@ -17,6 +17,7 @@ def get_psycopg2_connection():
 
     # connect to postgres database,
     conn = psycopg2.connect(host=postgres_host, user=postgres_user, password=postgres_password, port=postgres_port)
+    conn.autocommit = True
     return conn
 
 

@@ -1,0 +1,20 @@
+import sys
+sys.path.append("/home/ilayk/work/nuclio-ci")
+import nuclio_sdk.test
+import os
+import common.nuclio_helper_functions
+import common.psycopg2_functions
+
+
+class TestCase(nuclio_sdk.TestCase):
+
+    def test_slack_notifier(self):
+
+        # keep the situation clean - init_database before
+        cur = self._platform.context.user_data.conn.cursor()
+
+        self._platform.context.platform.call_function(36545, nuclio_sdk.Event(body={
+            'slack_username': 'ilayk',
+            'message': 'Your Nuci test started'
+        }))
+

@@ -1,6 +1,6 @@
 import slackclient.client
 import requests
-import json
+import io
 import os
 
 SLACK_CLIENT = None
@@ -12,6 +12,7 @@ def handler(context, event):
     request_info = event.body
     slack_username = request_info.get('slack_username')
     message_to_send = request_info.get('message')
+    send_message_in_file = request_info.get('message')
 
     if message_to_send is None:
         raise NameError('Variable \'message\' could not be found in triggering package')
@@ -29,12 +30,24 @@ def handler(context, event):
         # init slack_client with given slack_token
         SLACK_CLIENT = slackclient.SlackClient(slack_token)
 
-    # send a 'Nuci startred' message to the user
-    slackbot_send_result = SLACK_CLIENT.api_call(
-        'chat.postMessage',
-        channel=f'@{slack_username}',
-        text=message_to_send,
-    )
+    slackbot_send_result = None
+    if send_message_in_file is not None and send_message_in_file == 'True':
+
+        # send logs file to the user
+        slackbot_send_result = SLACK_CLIENT.api_call(
+            'files.upload',
+            channel=f'@{slack_username}',
+            filename='Nuclio-ci\'s failed test\'s logs',
+            file=io.BytesIO(str.encode(message_to_send))
+        )
+    else:
+
+        # send a 'Nuci startred' message to the user
+        slackbot_send_result = SLACK_CLIENT.api_call(
+            'chat.postMessage',
+            channel=f'@{slack_username}',
+            text=message_to_send,
+        )
 
     # check send result, log & raise errors accordingly
     if slackbot_send_result['ok']:

@@ -3,9 +3,12 @@ import common.nuclio_helper_functions
 import json
 import nuclio_sdk
 
-# event body should contain: git_url, github_username, commit_sha, git_branch, clone_url
+
+# event body should contain: git_url, github_username, commit_sha, git_branch, clone_url, is_testing
 def handler(context, event):
     request_body = event.body
+
+    context.logger.debug(request_body)
 
     # cur is the cursor of current connection
     cur = context.user_data.conn.cursor()
@@ -42,10 +45,11 @@ def handler(context, event):
         }
     ))
 
-    context.logger.info(build_and_push_artifacts_response.body)
+    context.logger.debug(build_and_push_artifacts_response)
+
     # get artifact_urls & artifact_tests from build_and_push_artifacts_response
-    artifact_urls = build_and_push_artifacts_response.body['artifact_urls']
-    artifact_tests = build_and_push_artifacts_response.body['tests_paths']
+    artifact_urls = build_and_push_artifacts_response.body.get('artifact_urls')
+    artifact_tests = build_and_push_artifacts_response.body.get('tests_paths')
 
     # save artifact URLs in job
     cur.execute('update jobs set artifact_urls = %s where oid = %s', (json.dumps(artifact_urls), job_oid))
@@ -105,7 +109,7 @@ def create_job(db_cursor, github_username, github_url, commit_sha):
     # create a db job object with information about this job. set the
     # state to building artifacts
     db_cursor.execute(f'insert into jobs (state, github_username, github_url, commit_sha) values '
-                      f'(1, %s, %s, %s) returning oid', (github_username, github_url, commit_sha))
+                      f'(\'pending\', %s, %s, %s) returning oid', (github_username, github_url, commit_sha))
 
     # get OID of inserted job
     job_oid = db_cursor.fetchone()[0]

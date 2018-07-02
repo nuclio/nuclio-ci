@@ -73,6 +73,7 @@ def _get_functions(host):
                               'pip install delegator.py psycopg2 requests parse',
             'port': 36547,
             'env': {'PGINFO': 'postgres:pass@172.17.0.1:5432'},
+            'volume': "/var/run/docker.sock:/var/run/docker.sock",
             'path': '/run_test_case'
         },
         'build_push_artifacts': {
@@ -93,16 +94,16 @@ def _get_functions(host):
         },
         'slack_notifier': {
             'build-command': 'pip install requests slackclient',
-            'env': {'PGINFO': 'postgres:pass@172.17.0.1:5432'},
+            'env': {'NUCLIO_CI_SLACK_TOKEN': os.environ['NUCLIO_CI_SLACK_TOKEN']},
             'port': 36545,
             'path': '/slack_notifier'
         },
-        'test_complete': {
+        'complete_test': {
             'build-command': 'apk add --update --no-cache gcc musl-dev python-dev postgresql-dev docker'
                               'pip install psycopg2 parse requests',
             'env': {'PGINFO': 'postgres:pass@172.17.0.1:5432'},
             'port': 36549,
-            'path': '/test_complete'
+            'path': '/complete_test'
         },
     }
 
@@ -136,7 +137,7 @@ def _get_function_parameters(function_configuration):
 
 
 def _deploy_local(host):
-    network_name = 'zandbox-network'
+    network_name = 'nuclio-ci-network'
 
     # first, delete all running function containers
     _log('Removing functions')

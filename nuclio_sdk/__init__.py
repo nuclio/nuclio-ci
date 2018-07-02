@@ -17,3 +17,4 @@ from nuclio_sdk.context import Context
 from nuclio_sdk.event import Event
 from nuclio_sdk.platform import Platform
 from nuclio_sdk.response import Response
+from nuclio_sdk.test import TestCase

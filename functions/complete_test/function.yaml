@@ -5,7 +5,7 @@ spec:
     - name: PGINFO
       value: postgres:pass@172.17.0.1:5432
   runtime: "python"
-  handler: "test_complete:handler"
+  handler: "complete_test:handler"
   build:
     commands:
     - "apk add --update --no-cache gcc musl-dev python-dev postgresql-dev docker"

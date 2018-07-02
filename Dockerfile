@@ -27,7 +27,8 @@ RUN sh && export PATH=$PATH:/usr/local/go/bin\
     cp docker/* /usr/bin/ &&\
     curl -O https://dl.google.com/go/go1.9.5.linux-amd64.tar.gz &&\
     tar -C /usr/local -xzf go1.9.5.linux-amd64.tar.gz && export PATH=$PATH:/usr/local/go/bin && \
-    mkdir -p /root/go/src/github.com/nuclio/nuclio && go get github.com/v3io/v3io-go-http/... &&\
+    mkdir -p /root/go/src/github.com/nuclio/nuclio && cd /root/go/src/github.com/nuclio/nuclio &&\
+    go get github.com/v3io/v3io-go-http/... &&\
     go get github.com/nuclio/logger/... && go get github.com/nuclio/nuclio-sdk-go/... &&\
     go get github.com/nuclio/amqp/...
 

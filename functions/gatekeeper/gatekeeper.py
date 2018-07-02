@@ -20,7 +20,7 @@ def handler(context, event):
     pr = Pr(webhook_report, session)
 
     # check if event is not relevant don't do anything
-    if not event_warrants_starting_integration_test(webhook_report) or pr._get_comments_url() is None:
+    if not event_warrants_starting_integration_test(webhook_report):
         if testing:
             return context.Response(body={'Nuci not permitted to start'})
         return
@@ -40,16 +40,16 @@ def handler(context, event):
     # event body should contain: git_url, github_username, commit_sha, git_branch
     context.logger.info("Nuci started")
 
-    if testing:
-        return context.Response(body={'Nuci started'})
-    else:
-        context.platform.call_function("run-job", nuclio_sdk.Event(body={
-            "github_username": webhook_report["pull_request"]["user"]["login"],
-            "git_url": webhook_report["pull_request"]["html_url"],
-            "commit_sha": webhook_report["pull_request"]["head"]["sha"],
-            "git_branch": webhook_report["pull_request"]["head"]["ref"],
-            "clone_url": webhook_report["pull_request"]["head"]["repo"]["git_url"]
-        }))
+    event = nuclio_sdk.Event(body={
+        "github_username": webhook_report["pull_request"]["user"]["login"],
+        "git_url": webhook_report["pull_request"]["html_url"],
+        "commit_sha": webhook_report["pull_request"]["head"]["sha"],
+        "git_branch": webhook_report["pull_request"]["head"]["ref"],
+        "clone_url": webhook_report["pull_request"]["head"]["repo"]["git_url"]
+    })
+
+    context.logger.debug(event)
+    context.platform.call_function("run-job", event)
 
 def is_test(webhook_report):
     if webhook_report.get('testing_nuclio_ci') is None:
@@ -145,18 +145,12 @@ class Pr(object):
 
     # return comments_url of the PR
     def _get_comments_url(self):
-
-        if self._webhook.get('issue') is None:
-            return None
-
         action_type = self._webhook['action']
+
         # handle cases where jsons are different
         if action_type == 'created':
-
-            print(self._webhook['issue']['pull_request']['comments_url'])
             return self._webhook['issue']['pull_request']['comments_url']
 
-        print(self._webhook['issue']['pull_request']['comments_url'])
         return self._webhook['pull_request']['comments_url']
 
 

@@ -12,7 +12,11 @@ LOCAL_ARCH = 'amd64'
 def handler(context, event):
 
     # get vars for building and pushing the artifacts
+
     request_body = event.body
+
+    context.logger.debug(request_body)
+
     registry_host_and_port = os.environ.get('HOST_URL', '172.17.0.1:5000')
     git_url = request_body.get('git_url')
     git_commit = request_body.get('git_commit')
@@ -35,13 +39,14 @@ def handler(context, event):
     artifact_urls = push_images(context, images_tags, registry_host_and_port)
 
     # build and push tester image
-    artifact_urls.append(build_push_tester_image(context, registry_host_and_port, git_branch, git_commit))
+    build_push_tester_image(context, registry_host_and_port, git_branch, git_commit)
 
     tests_paths = _get_tests_paths(context)
 
     # clean directory
-    common.nuclio_helper_functions.run_command(context, 'rm -r  /root/go/src/', '/')
+    common.nuclio_helper_functions.run_command(context, 'rm -r  /root/go/src/github.com/nuclio/nuclio', '/')
 
+    context.logger.debug(context.Response(body={'artifact_urls': artifact_urls, 'tests_paths': tests_paths}))
     return context.Response(body={'artifact_urls': artifact_urls, 'tests_paths': tests_paths})
 
 
@@ -72,7 +77,7 @@ def get_images_tags(context):
     images = common.nuclio_helper_functions.run_command(context, 'make print-docker-images', NUCLIO_PATH).split('\n')
 
     # filter out all non-paths, comments and commands, etc.
-    return list(filter(lambda path: path[:5] == 'nuclio', images))
+    return list(filter(lambda path: path[:6] == 'nuclio', images))
 
 
 # get image tags, tag the images with tag fit local registry push convention and push to given registry_host_and_port
@@ -95,6 +100,7 @@ def push_images(context, images_tags, registry_host_and_port):
 
             # change image to its new tag values
             images_tags[image_index] = new_image_tag
+
     return images_tags
 
 

@@ -24,7 +24,7 @@ def handler(context, event):
         cur.execute(command)
 
     # process request - insert data accordingly
-    process_request(json.loads(event.body)['fixtures'], context.user_data.conn)
+    process_request(event.body['fixtures'], context.user_data.conn)
 
     # commit changes
     context.user_data.conn.commit()

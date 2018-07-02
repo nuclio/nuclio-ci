@@ -33,9 +33,10 @@ class Platform(object):
         # connection_provider is used for unit testing
         self._connection_provider = connection_provider or HTTPConnection
 
-    def call_function(self, function_name, event, node=None):
+    def call_function(self, function_name, event, node=None, wait_for_response=True):
 
         # get connection from provider
+
         connection = self._connection_provider(self._get_function_url(function_name))
 
         # if the user passes a dict as a body, assume json serialization. otherwise take content type from
@@ -47,37 +48,41 @@ class Platform(object):
             body = event.body
             content_type = event.content_type or 'text/plain'
 
+
         connection.request(event.method,
                            event.path,
                            body=body,
                            headers={'Content-Type': content_type})
 
-        # get response from connection
-        connection_response = connection.getresponse()
+        if wait_for_response:
+            # get response from connection
+            connection_response = connection.getresponse()
 
-        # header dict
-        response_headers = {}
+            # header dict
+            response_headers = {}
 
-        # get response headers as lowercase
-        for (name, value) in connection_response.getheaders():
-            response_headers[name.lower()] = value
+            # get response headers as lowercase
+            for (name, value) in connection_response.getheaders():
+                response_headers[name.lower()] = value
 
-        # if content type exists, use it
-        response_content_type = response_headers.get('content-type', 'text/plain')
+            # if content type exists, use it
+            response_content_type = response_headers.get('content-type', 'text/plain')
 
-        # read the body
-        response_body = connection_response.read()
+            # read the body
+            response_body = connection_response.read()
 
-        # if content type is json, go ahead and do parsing here. if it explodes, don't blow up
-        if response_content_type == 'application/json':
-            response_body = json.loads(response_body)
+            # if content type is json, go ahead and do parsing here. if it explodes, don't blow up
+            if response_content_type == 'application/json':
+                response_body = json.loads(response_body)
 
-        response = nuclio_sdk.Response(headers=response_headers,
-                                       body=response_body,
-                                       content_type=response_content_type,
-                                       status_code=connection_response.status)
+            response = nuclio_sdk.Response(headers=response_headers,
+                                           body=response_body,
+                                           content_type=response_content_type,
+                                           status_code=connection_response.status)
 
-        return response
+            return response
+
+        return
 
     def _get_function_url(self, function_name):
 
