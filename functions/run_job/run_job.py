@@ -1,7 +1,7 @@
-import common.psycopg2_functions
-import common.nuclio_helper_functions
+import libs.common.psycopg2_functions
+import libs.common.nuclio_helper_functions
 import json
-import nuclio_sdk
+from libs import nuclio_sdk
 
 
 # event body should contain: git_url, github_username, commit_sha, git_branch, clone_url, is_testing
@@ -21,7 +21,7 @@ def handler(context, event):
                          )
 
     # get slack username
-    slack_username = common.nuclio_helper_functions.convert_slack_username(cur, request_body.get("github_username"))
+    slack_username = libs.common.nuclio_helper_functions.convert_slack_username(cur, request_body.get("github_username"))
 
     # notify via slack that build is running
     context.platform.call_function('slack-notifier', nuclio_sdk.Event(body={
@@ -30,7 +30,7 @@ def handler(context, event):
     }))
 
     # notify via github that build is running
-    context.platform.call_function('github-status-updater',  nuclio_sdk.Event(body={
+    context.platform.call_function('github-status-updater', nuclio_sdk.Event(body={
         'state': 'pending',
         'repo_url': request_body.get('git_url'),
         'commit_sha': request_body.get('commit_sha')
@@ -96,7 +96,7 @@ def handler(context, event):
         # run a test, pull is required
         context.logger.info_with('Starting test case', Node=idle_node, Test_case_id=test_case)
 
-        context.platform.call_function('run-test-case',  nuclio_sdk.Event(body={
+        context.platform.call_function('run-test-case', nuclio_sdk.Event(body={
             'node': idle_node,
             'pull_mode': 'pull',
             'test_case_id': test_case,
@@ -118,6 +118,6 @@ def create_job(db_cursor, github_username, github_url, commit_sha):
 
 
 def init_context(context):
-    setattr(context.user_data, 'conn', common.psycopg2_functions.get_psycopg2_connection())
+    setattr(context.user_data, 'conn', libs.common.psycopg2_functions.get_psycopg2_connection())
 
 

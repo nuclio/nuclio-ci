@@ -1,7 +1,6 @@
-import json
-import common.psycopg2_functions
-import common.nuclio_helper_functions
-import nuclio_sdk
+import libs.common.psycopg2_functions
+from libs import nuclio_sdk
+
 
 # this local function calls a remote function called release node.
 # release_node:
@@ -26,7 +25,7 @@ def handler(context, event):
         _run_foreign_test_case(context, cur, current_node_id)
     # else, found another test need to be done in same job - run_test_case without pull required
     else:
-        context.platform.call_function('run-test-case',  nuclio_sdk.Event(body={'pull_mode': 'no_pull',
+        context.platform.call_function('run-test-case', nuclio_sdk.Event(body={'pull_mode': 'no_pull',
                                                    'test_case_id': current_test_case}))
 
 
@@ -71,10 +70,10 @@ def _run_foreign_test_case(context, cur, current_node):
         cur.execute('update nodes set current_test_case = NULL where oid=%s', (current_node,))
 
     context.logger.debug('new job id : ' + str(new_job_id ))
-    context.platform.call_function('run-test-case',  nuclio_sdk.Event(body={'pull_mode': 'pull',
-                                                                            'test_case_id': new_test_case_oid }))
+    context.platform.call_function('run-test-case', nuclio_sdk.Event(body={'pull_mode': 'pull',
+                                                                            'test_case_id': new_test_case_oid}))
 
 
 def init_context(context):
-    setattr(context.user_data, 'conn', common.psycopg2_functions.get_psycopg2_connection())
+    setattr(context.user_data, 'conn', libs.common.psycopg2_functions.get_psycopg2_connection())
 

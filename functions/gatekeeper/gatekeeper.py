@@ -1,9 +1,9 @@
-import common.psycopg2_functions
+import libs.common.psycopg2_functions
 import os
 import json
 import parse
 import requests
-import nuclio_sdk
+from libs import nuclio_sdk
 
 PERMISSION_SEQUENCE = 'Can one of the admins approve running tests for this PR?'
 LAUNCH_WORD = '@nuci approved'
@@ -155,5 +155,5 @@ class Pr(object):
 
 
 def init_context(context):
-    setattr(context.user_data, 'conn', common.psycopg2_functions.get_psycopg2_connection())
+    setattr(context.user_data, 'conn', libs.common.psycopg2_functions.get_psycopg2_connection())
 

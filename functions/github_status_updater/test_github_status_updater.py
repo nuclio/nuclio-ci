@@ -1,8 +1,6 @@
 import sys
 sys.path.append("/home/ilayk/work/nuclio-ci")
 
-import nuclio_sdk.test
-import common.nuclio_helper_functions
 import requests
 import os
 

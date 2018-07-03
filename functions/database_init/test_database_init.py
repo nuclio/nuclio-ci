@@ -1,8 +1,6 @@
 
 import nuclio_sdk
-import common.nuclio_helper_functions
-import common.psycopg2_functions
-import os
+
 
 class TestCase(nuclio_sdk.TestCase):
 

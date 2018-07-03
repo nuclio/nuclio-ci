@@ -1,10 +1,8 @@
 import sys
 sys.path.append("/home/ilayk/work/nuclio-ci")
 
-import nuclio_sdk
-import common.nuclio_helper_functions
-import common.psycopg2_functions
-import os
+from libs import nuclio_sdk
+import libs.common.nuclio_helper_functions
 
 
 class TestCase(nuclio_sdk.TestCase):
@@ -76,7 +74,7 @@ class TestCase(nuclio_sdk.TestCase):
             if supposed_url not in artifact_urls:
                 self.assertIn('Not all artifact-urls were figured out - missing', supposed_url)
 
-        up_images = common.nuclio_helper_functions.run_command(
+        up_images = libs.common.nuclio_helper_functions.run_command(
             self._platform.context,
             'curl -X GET  -k http://localhost:5000/v2/_catalog'
         )

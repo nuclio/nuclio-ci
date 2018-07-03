@@ -1,12 +1,12 @@
 import psycopg2.sql
-import common.psycopg2_functions
+import libs.common.psycopg2_functions
 import json
 
 
 # init database, gets info to put in tanles in event.body in format of
 # fixtures: { table_name: [{col1_name: col1_value, col2_name: col2_value...}, {col1_name...}] table_name2:...}
 def handler(context, event):
-
+    body = json.loads(event.body)
 
     # proper commands to initialize database
     commands = ['create table test_cases (running_node oid, logs text, result text, job oid,'
@@ -24,7 +24,7 @@ def handler(context, event):
         cur.execute(command)
 
     # process request - insert data accordingly
-    process_request(event.body['fixtures'], context.user_data.conn)
+    process_request(body['fixtures'], context.user_data.conn)
 
     # commit changes
     context.user_data.conn.commit()
@@ -51,4 +51,4 @@ def execute_using_parsed_arguments(db_cursor, table_name, row_info):
 
 
 def init_context(context):
-    setattr(context.user_data, 'conn', common.psycopg2_functions.get_psycopg2_connection())
+    setattr(context.user_data, 'conn', libs.common.psycopg2_functions.get_psycopg2_connection())

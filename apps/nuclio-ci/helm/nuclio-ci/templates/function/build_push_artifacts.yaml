@@ -1,0 +1,38 @@
+apiVersion: "nuclio.io/v1beta1"
+kind: "Function"
+spec:
+  env:
+    - name: HOST_URL
+      value: localhost:5000
+    - name: DOCKERIZED_BUILD
+      value: TRUE
+    - name: GOPATH
+      value: /root/go
+    - name: NUCLIO_PATH
+      value: /root/go/src/github.com/nuclio/nuclio
+  runtime: "python:3.6"
+  handler: "build_push_artifacts:handler"
+  volumes:
+  - volume:
+      hostPath:
+        Path: "/var/run/docker.sock"
+    volumeMount:
+      mountPath: "/var/run/docker.sock"
+  build:
+    baseImage: jessie
+    commands:
+      - "export PATH=$PATH:/usr/local/go/bin && apt-get update && apt-get install -y git
+         && apt-get install -y build-essential && curl -O https://download.docker.com/linux/static/stable/x86_64/docker-18.03.0-ce.tgz
+         && tar xzvf docker-18.03.0-ce.tgz
+         && cp docker/* /usr/bin/
+         && curl -O https://dl.google.com/go/go1.9.5.linux-amd64.tar.gz
+         && tar -C /usr/local -xzf go1.9.5.linux-amd64.tar.gz
+         && mkdir -p /root/go/src/github.com/nuclio/nuclio && go get github.com/v3io/v3io-go-http/...
+         && go get github.com/nuclio/logger/... && go get github.com/nuclio/nuclio-sdk-go/... && go get github.com/nuclio/amqp/... "
+      - "pip install parse delegator.py"
+  triggers:
+    httpTrigger:
+      maxWorkers: 4
+      kind: "http"
+      attributes:
+        port: 36546

@@ -1,8 +1,6 @@
-import json
-import common.psycopg2_functions
-import common.nuclio_helper_functions
-import nuclio_sdk
-import time
+import libs.common.psycopg2_functions
+import libs.common.nuclio_helper_functions
+from libs import nuclio_sdk
 
 conte = None
 
@@ -29,7 +27,7 @@ def handler(context, event):
     if job_state == 'failed':
 
         context.logger.debug('failed')
-        context.platform.call_function('release-node',  nuclio_sdk.Event(body={
+        context.platform.call_function('release-node', nuclio_sdk.Event(body={
             'node_id': current_node,
         }))
 
@@ -62,7 +60,7 @@ def handler(context, event):
             context.logger.debug('calling di')
             context.platform.call_function('database-init', nuclio_sdk.Event(body=
                     {"fixtures": {"users": [{"github_username": "ilaykav", "slack_username": "ilayk"}]}}
-                    ))
+                                                                             ))
             context.logger.debug('ending')
 
 
@@ -80,7 +78,7 @@ def report_job_result(context, cur, current_job, result):
     github_username, git_url, commit_sha = _get_jobs_properties_for_reporting(cur, current_job)
 
     # get slack username
-    slack_username = common.nuclio_helper_functions.convert_slack_username(cur, github_username)
+    slack_username = libs.common.nuclio_helper_functions.convert_slack_username(cur, github_username)
 
     # notify via slack that build is running
     context.platform.call_function('slack-notifier',  nuclio_sdk.Event(body={
@@ -93,7 +91,7 @@ def report_job_logs(context, cur, current_job, current_test):
     github_username, git_url, commit_sha = _get_jobs_properties_for_reporting(cur, current_job)
 
     # get slack username
-    slack_username = common.nuclio_helper_functions.convert_slack_username(cur, github_username)
+    slack_username = libs.common.nuclio_helper_functions.convert_slack_username(cur, github_username)
 
     cur.execute('select logs from test_cases where oid = %s', (current_test,))
     logs = cur.fetchone()
@@ -101,7 +99,7 @@ def report_job_logs(context, cur, current_job, current_test):
         logs = logs[0]
 
     # notify via slack that build is running
-    context.platform.call_function('slack-notifier',  nuclio_sdk.Event(body={
+    context.platform.call_function('slack-notifier', nuclio_sdk.Event(body={
         'slack_username': slack_username,
         'message': logs,
         'send_message_in_file': 'True'
@@ -157,7 +155,7 @@ def _job_succeeded(context, cur, current_job, current_node):
     report_job_result(context, cur, current_job, 'success')
 
     # release the node
-    context.platform.call_function('release-node',  nuclio_sdk.Event(body={
+    context.platform.call_function('release-node', nuclio_sdk.Event(body={
         'node_id': current_node,
     }))
 
@@ -170,11 +168,11 @@ def _test_failed(context, cur, current_job, current_node, current_test):
 
     # report job's logs with slack
     report_job_logs(context, cur, current_job, current_test)
-    context.platform.call_function('release-node',  nuclio_sdk.Event(body={
+    context.platform.call_function('release-node', nuclio_sdk.Event(body={
         'node_id': current_node,
     }))
 
 
 def init_context(context):
-    setattr(context.user_data, 'conn', common.psycopg2_functions.get_psycopg2_connection())
+    setattr(context.user_data, 'conn', libs.common.psycopg2_functions.get_psycopg2_connection())
 

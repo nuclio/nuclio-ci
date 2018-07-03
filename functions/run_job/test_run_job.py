@@ -1,10 +1,6 @@
 import sys
 sys.path.append("/home/ilayk/work/nuclio-ci")
-import nuclio_sdk.test
-import common.nuclio_helper_functions
-import common.nuclio_helper_functions
-import common.psycopg2_functions
-import os
+import libs.common.psycopg2_functions
 
 
 class TestCase(nuclio_sdk.TestCase):
@@ -46,6 +42,6 @@ class TestCase(nuclio_sdk.TestCase):
         return job_oid
 
     def init_context(context):
-        setattr(context.user_data, 'conn', common.psycopg2_functions.get_psycopg2_connection())
+        setattr(context.user_data, 'conn', libs.common.psycopg2_functions.get_psycopg2_connection())
 
 

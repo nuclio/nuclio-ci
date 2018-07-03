@@ -1,0 +1,17 @@
+apiVersion: "nuclio.io/v1beta1"
+kind: "Function"
+spec:
+  env:
+    - name: REPO_OWNER_DETAILS
+      value: username:access_token
+  runtime: "python"
+  handler: "gatekeeper:handler"
+  build:
+    commands:
+    - "pip install requests parse"
+  triggers:
+    httpTrigger:
+      maxWorkers: 4
+      kind: "http"
+      attributes:
+        port: 12345

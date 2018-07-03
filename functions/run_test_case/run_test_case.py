@@ -1,7 +1,7 @@
 import json
-import common.psycopg2_functions
-import common.nuclio_helper_functions
-import nuclio_sdk
+import libs.common.psycopg2_functions
+import libs.common.nuclio_helper_functions
+from libs import nuclio_sdk
 
 MODES_WORTH_PULLING = ['pull']
 
@@ -21,8 +21,8 @@ def handler(context, event):
     cur = context.user_data.conn.cursor()
 
     # pull tester image
-    common.nuclio_helper_functions.run_command(context, f'docker pull localhost:5000/tester:latest-amd64',
-                                               accept_error=True)
+    libs.common.nuclio_helper_functions.run_command(context, f'docker pull localhost:5000/tester:latest-amd64',
+                                                    accept_error=True)
 
     if _pull_mode_requires_pulling(pull_mode):
         _pull_images(context, cur, test_case_id)
@@ -39,7 +39,7 @@ def handler(context, event):
     context.logger.info_with('Sending data to test_case_complete', test_case=test_case_id, test_case_result=run_result)
 
     # call complete_test
-    context.platform.call_function('complete-test',  nuclio_sdk.Event(body={
+    context.platform.call_function('complete-test', nuclio_sdk.Event(body={
         'test_case': test_case_id,
         'test_case_result': 'success' if run_result == '0' else 'failure',
         }), wait_for_response=False)
@@ -85,13 +85,13 @@ def _run_next_test_case(context, test_case_id, cur):
 
     artifact_test = get_artifact_test_from_test_case(cur, test_case_id)
 
-    return(common.nuclio_helper_functions.run_command(context,
+    return(libs.common.nuclio_helper_functions.run_command(context,
                                                       f'docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock '
                                                       f'--volume /tmp:/tmp --workdir /go/src/github.com/nuclio/nuclio --env '
                                                       f'NUCLIO_TEST_HOST=172.17.0.1 localhost:5000/tester:latest-amd64'
                                                       f' /bin/bash -c "make test-undockerized '
                                                       f'NUCLIO_TEST_NAME=github.com/nuclio/nuclio/{artifact_test}" && echo $?',
-                                                      accept_error=True))
+                                                           accept_error=True))
 
 
 # pull images of given test case,
@@ -108,7 +108,7 @@ def _pull_images(context, cur, test_case_id):
     artifact_urls = json.loads(get_cursors_one_result(cur, f'select artifact_urls from jobs where oid = {jobs_id}'))
 
     for url in artifact_urls:
-        common.nuclio_helper_functions.run_command(context, f'docker pull {url}')
+        libs.common.nuclio_helper_functions.run_command(context, f'docker pull {url}')
 
 
 def _update_test_cases_logs(logs, test_case_id, cur):
@@ -116,5 +116,5 @@ def _update_test_cases_logs(logs, test_case_id, cur):
 
 
 def init_context(context):
-    setattr(context.user_data, 'conn', common.psycopg2_functions.get_psycopg2_connection())
+    setattr(context.user_data, 'conn', libs.common.psycopg2_functions.get_psycopg2_connection())
 
