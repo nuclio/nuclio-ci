@@ -1,5 +1,7 @@
 apiVersion: "nuclio.io/v1beta1"
 kind: "Function"
+metadata:
+  name: {{ template "nuclio-ci.slackNotifier" . }}
 spec:
   env:
     - name: NUCLIO_CI_SLACK_TOKEN

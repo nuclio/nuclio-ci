@@ -1,32 +1,40 @@
-{{/* vim: set filetype=mustache: */}}
-{{/*
-Expand the name of the chart.
-*/}}
-{{- define "nuclio-ci.name" -}}
-{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
+
+{{- define "nuclio-ci.Name" -}}
+{{- "nuclioci" | trunc 63 -}}
 {{- end -}}
 
-{{/*
-Create a default fully qualified app name.
-We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
-If release name contains chart name it will be used as a full name.
-*/}}
-{{- define "nuclio-ci.fullname" -}}
-{{- if .Values.fullnameOverride -}}
-{{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
-{{- else -}}
-{{- $name := default .Chart.Name .Values.nameOverride -}}
-{{- if contains $name .Release.Name -}}
-{{- .Release.Name | trunc 63 | trimSuffix "-" -}}
-{{- else -}}
-{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
-{{- end -}}
-{{- end -}}
+{{- define "nuclio-ci.buildPushArtifacts" -}}
+{{- "build_push_artifacts" | trunc 63 -}}
 {{- end -}}
 
-{{/*
-Create chart name and version as used by the chart label.
-*/}}
-{{- define "nuclio-ci.chart" -}}
-{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
+{{- define "nuclio-ci.completeTest" -}}
+{{- "complete_test" | trunc 63 -}}
+{{- end -}}
+
+{{- define "nuclio-ci.databaseInit" -}}
+{{- "database-init" | trunc 63 -}}
+{{- end -}}
+
+{{- define "nuclio-ci.gatekeeper" -}}
+{{- "gatekeeper" | trunc 63 -}}
+{{- end -}}
+
+{{- define "nuclio-ci.githubStatusUpdater" -}}
+{{- "github_status_updater" | trunc 63 -}}
+{{- end -}}
+
+{{- define "nuclio-ci.releaseNode" -}}
+{{- "release-node" | trunc 63 -}}
+{{- end -}}
+
+{{- define "nuclio-ci.runJob" -}}
+{{- "run-job" | trunc 63 -}}
+{{- end -}}
+
+{{- define "nuclio-ci.runTestCase" -}}
+{{- "run-test-case" | trunc 63 -}}
+{{- end -}}
+
+{{- define "nuclio-ci.slackNotifier" -}}
+{{- "slack-notifier" | trunc 63 -}}
 {{- end -}}

@@ -1,5 +1,7 @@
 apiVersion: "nuclio.io/v1beta1"
 kind: "Function"
+metadata:
+  name: {{ template "nuclio-ci.runTestCase" . }}
 spec:
   httpPort: 36549
   env:

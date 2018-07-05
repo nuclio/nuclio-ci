@@ -1,51 +1,22 @@
 apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
-  name: {{ template "nuclio-ci.fullname" . }}
-  labels:
-    app: {{ template "nuclio-ci.name" . }}
-    chart: {{ template "nuclio-ci.chart" . }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
+  name: {{ template "nuclio-ci.runJob" . }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.frontend.replicas }}
   selector:
     matchLabels:
-      app: {{ template "nuclio-ci.name" . }}
-      release: {{ .Release.Name }}
+      zandbox/service: {{ template "nuclio-ci.runJob" . }}
   template:
     metadata:
       labels:
-        app: {{ template "nuclio-ci.name" . }}
-        release: {{ .Release.Name }}
+        zandbox/service: {{ template "nuclio-ci.runJob" . }}
     spec:
+      imagePullSecrets:
+      - name: registry-credentials
       containers:
-        - name: {{ .Chart.Name }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          ports:
-            - name: http
-              containerPort: 80
-              protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /
-              port: http
-          readinessProbe:
-            httpGet:
-              path: /
-              port: http
-          resources:
-{{ toYaml .Values.resources | indent 12 }}
-    {{- with .Values.nodeSelector }}
-      nodeSelector:
-{{ toYaml . | indent 8 }}
-    {{- end }}
-    {{- with .Values.affinity }}
-      affinity:
-{{ toYaml . | indent 8 }}
-    {{- end }}
-    {{- with .Values.tolerations }}
-      tolerations:
-{{ toYaml . | indent 8 }}
-    {{- end }}
+      - name: {{ template "nuclio-ci.Name" . }}
+        image: {{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}
+        imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
+        ports:
+        - containerPort: 12345

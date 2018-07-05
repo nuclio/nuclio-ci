@@ -1,45 +1,38 @@
-# Default values for nuclio-ci.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
+slack:
+  channel: "#zandbox"
 
-replicaCount: 1
+#
+# Functions
+#
 
-image:
-  repository: nginx
-  tag: stable
-  pullPolicy: IfNotPresent
+# shared parameters for all functions
+functions:
+  secretName: nuclio-ci-creds
 
-service:
-  type: ClusterIP
-  port: 80
+createSandboxProvisioning:
+  replicas: 1
 
-ingress:
-  enabled: false
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
-  path: /
-  hosts:
-    - chart-example.local
-  tls: []
-  #  - secretName: chart-example-tls
-  #    hosts:
-  #      - chart-example.local
+confirmSandboxProvisioningOwner:
+  replicas: 1
 
-resources: {}
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  # limits:
-  #  cpu: 100m
-  #  memory: 128Mi
-  # requests:
-  #  cpu: 100m
-  #  memory: 128Mi
+getSandboxProvisioning:
+  replicas: 1
 
-nodeSelector: {}
+provisionSandbox:
+  replicas: 1
 
-tolerations: []
+sendSlack:
+  replicas: 1
 
-affinity: {}
+#
+# Services
+#
+
+frontend:
+  replicas: 1
+  image:
+    repository: nuclio-ci/gatekeeper-amd64
+    tag: latest
+    pullPolicy: IfNotPresent
+
+

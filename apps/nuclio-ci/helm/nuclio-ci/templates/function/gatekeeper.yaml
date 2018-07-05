@@ -1,5 +1,7 @@
 apiVersion: "nuclio.io/v1beta1"
 kind: "Function"
+metadata:
+  name: {{ template "nuclio-ci.gatekeeper" . }}
 spec:
   env:
     - name: REPO_OWNER_DETAILS
