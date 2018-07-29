@@ -53,7 +53,7 @@ class TestCase(nuclio_sdk.TestCase):
                                     "processor-py3.6-alpine","processor-py3.6-jessie","processor-pypy2-5.9-jessie",
                                     "processor-shell-alpine","tester","user-builder-java-onbuild"]
 
-        build_and_push_artifacts_response = self._platform.call_function(function_indicator=36546,
+        build_and_push_artifacts_response = self._platform.call_function(function_indicator=31546,
             event=nuclio_sdk.Event(body={
                 'git_url': 'https://github.com/ilaykav/nuclio.git',
                 'git_commit': '4db2b5529a26b16ff8018a4c10eeb37e723a570c',

@@ -11,7 +11,7 @@ spec:
       maxWorkers: 4
       kind: "http"
       attributes:
-        port: 36550
+        port: 31550
   build:
     commands:
     - "apk add --update --no-cache gcc musl-dev python-dev postgresql-dev"

@@ -1,20 +1,20 @@
 apiVersion: "nuclio.io/v1beta1"
 kind: "Function"
 metadata:
-  name: {{ template "nuclio-ci.runJob" . }}
+  name: {{ template "nuclio-ci.completeTest" . }}
 spec:
   env:
     - name: PGINFO
       value: postgres:pass@172.17.0.1:5432
   runtime: "python"
-  handler: "run_job:handler"
+  handler: "complete_test:handler"
   build:
     commands:
-    - "apk add --update --no-cache gcc python-dev musl-dev postgresql-dev docker"
+    - "apk add --update --no-cache gcc musl-dev python-dev postgresql-dev docker"
     - "pip install psycopg2 parse requests"
   triggers:
     httpTrigger:
       maxWorkers: 4
       kind: "http"
       attributes:
-        port: 36548
+        port: 31549

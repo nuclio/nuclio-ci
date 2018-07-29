@@ -8,21 +8,46 @@ slack:
 # shared parameters for all functions
 functions:
   secretName: nuclio-ci-creds
+  containerTag: "latest"
+  registry: "localhost:5000"
+  buildPushArtifacts:
+    name: build-push-artifacts
+    containerName: zandbox
+    port: 31546
+  completeTest:
+    name: complete-test
+    containerName: zandbox
+    port: 31549
+  databaseInit:
+    name: database-init
+    containerName: zandbox
+    port: 31543
+  gatekeeper:
+    name: gatekeeper
+    containerName: zandbox
+    port: 30010
+  githubStatusUpdater:
+    name: github-status-updater
+    containerName: zandbox
+    port: 31544
+  releaseNode:
+    name: release-node
+    containerName: zandbox
+    port: 31550
+  runJob:
+    name: run-job
+    containerName: zandbox
+    port: 31548
+  runTestCase:
+    name: run-test-case
+    containerName: zandbox
+    port: 31547
+  slackNotifier:
+    name: slack-notifier
+    containerName: zandbox
+    port: 31545
 
-createSandboxProvisioning:
-  replicas: 1
 
-confirmSandboxProvisioningOwner:
-  replicas: 1
-
-getSandboxProvisioning:
-  replicas: 1
-
-provisionSandbox:
-  replicas: 1
-
-sendSlack:
-  replicas: 1
 
 #
 # Services

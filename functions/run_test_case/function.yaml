@@ -1,7 +1,7 @@
 apiVersion: "nuclio.io/v1beta1"
 kind: "Function"
 spec:
-  httpPort: 36549
+  httpPort: 31549
   env:
     - name: PGINFO
       value: postgres:pass@172.17.0.1:5432
@@ -27,4 +27,4 @@ spec:
       maxWorkers: 4
       kind: "http"
       attributes:
-        port: 36547
+        port: 31547

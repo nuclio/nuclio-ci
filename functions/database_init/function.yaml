@@ -15,4 +15,4 @@ spec:
       maxWorkers: 4
       kind: "http"
       attributes:
-        port: 36543
+        port: 31543

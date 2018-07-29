@@ -12,7 +12,7 @@ class TestCase(nuclio_sdk.TestCase):
         # check if jobs are updated
         cur.execute('insert into nodes values(NULL)')
 
-        self._platform.context.platform.call_function(36548, nuclio_sdk.Event(body={
+        self._platform.context.platform.call_function(31548, nuclio_sdk.Event(body={
             "github_username": 'ilaykav',
             "git_url": 'https://github.com/ilaykav/nuclio',
             "commit_sha": '4db2b5529a26b16ff8018a4c10eeb37e723a570c',

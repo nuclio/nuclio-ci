@@ -29,13 +29,13 @@ def _get_functions(host):
         'gatekeeper': {
             'env': {'REPO_OWNER_DETAILS': os.environ.get('repo_owner_details'),
                     'PGINFO': 'postgres:pass@172.17.0.1:5432'},  # username:access_token,
-            'port': 12345,
+            'port': 30010,
             'path': '/gatekeeper',
             'build-command': 'pip install requests parse'
         },
         'database_init': {
             'env': {'PGINFO': 'postgres:pass@172.17.0.1:5432'},
-            'port': 36543,
+            'port': 31543,
             'path': '/database_init',
             'volume': "/var/run/docker.sock:/var/run/docker.sock",
             'build-command': "export PATH=$PATH:/usr/local/go/bin && apt-get update && apt-get install -y git \
@@ -51,18 +51,18 @@ def _get_functions(host):
         'github_status_updater': {
             'env': {'REPO_OWNER_USERNAME': 'some_repo_owner_username',
                     'REPO_OWNER_OAUTH_TOKEN': 'some_repo_owner_oauth_token'},
-            'port': 36544,
+            'port': 31544,
             'path': '/github_status_updater',
             'build-command': 'pip install requests'
         },
         'release_node': {
             'env': {'PGINFO': 'postgres:pass@172.17.0.1:5432'},
-            'port': 36550,
+            'port': 31550,
             'path': '/release_node',
             'build-command': 'apk add --update --no-cache gcc musl-dev python-dev postgresql-dev & pip install psycopg2 parse requests'
         },
         'run_job': {
-            'port': 36548,
+            'port': 31548,
             'env': {'PGINFO': 'postgres:pass@172.17.0.1:5432'},
             'path': '/run_job',
             'build-command': 'apk add --update --no-cache gcc python-dev musl-dev postgresql-dev docker '
@@ -71,7 +71,7 @@ def _get_functions(host):
         'run_test_case': {
             'build-command': 'apk add --update --no-cache gcc musl-dev python-dev postgresql-dev docker '
                               'pip install delegator.py psycopg2 requests parse',
-            'port': 36547,
+            'port': 31547,
             'env': {'PGINFO': 'postgres:pass@172.17.0.1:5432'},
             'volume': "/var/run/docker.sock:/var/run/docker.sock",
             'path': '/run_test_case'
@@ -87,7 +87,7 @@ def _get_functions(host):
          '&& tar -C /usr/local -xzf go1.9.5.linux-amd64.tar.gz'
          '&& mkdir -p /root/go/src/github.com/nuclio/nuclio && go get github.com/v3io/v3io-go-http/...'
          '&& go get github.com/nuclio/logger/... && go get github.com/nuclio/nuclio-sdk-go/... && go get github.com/nuclio/amqp/... ',
-            'port': 36546,
+            'port': 31546,
             'volume': "/var/run/docker.sock:/var/run/docker.sock",
             'path': '/build_push_artifacts'
 
@@ -95,14 +95,14 @@ def _get_functions(host):
         'slack_notifier': {
             'build-command': 'pip install requests slackclient',
             'env': {'NUCLIO_CI_SLACK_TOKEN': os.environ['NUCLIO_CI_SLACK_TOKEN']},
-            'port': 36545,
+            'port': 31545,
             'path': '/slack_notifier'
         },
         'complete_test': {
             'build-command': 'apk add --update --no-cache gcc musl-dev python-dev postgresql-dev docker'
                               'pip install psycopg2 parse requests',
             'env': {'PGINFO': 'postgres:pass@172.17.0.1:5432'},
-            'port': 36549,
+            'port': 31549,
             'path': '/complete_test'
         },
     }
@@ -234,7 +234,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
 
     # add arguments
-    parser.add_argument('--platform', choices=['local', 'kube'], default='local')
+    parser.add_argument('--platform', choices=['local', 'kube'], default='kube')
     parser.add_argument('--run-registry', type=str)
     parser.add_argument('--host', type=str, required=True)
 

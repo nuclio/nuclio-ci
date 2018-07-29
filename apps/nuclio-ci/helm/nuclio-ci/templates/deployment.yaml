@@ -1,22 +1,206 @@
 apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
-  name: {{ template "nuclio-ci.runJob" . }}
+  name: {{ .Values.functions.buildPushArtifacts.name }}
 spec:
   replicas: {{ .Values.frontend.replicas }}
   selector:
     matchLabels:
-      zandbox/service: {{ template "nuclio-ci.runJob" . }}
+      nuclio-ci/service: {{ template "nuclio-ci.serviceName" . }}
   template:
     metadata:
       labels:
-        zandbox/service: {{ template "nuclio-ci.runJob" . }}
+        nuclio-ci/service: {{ template "nuclio-ci.serviceName" . }}
     spec:
-      imagePullSecrets:
-      - name: registry-credentials
       containers:
-      - name: {{ template "nuclio-ci.Name" . }}
-        image: {{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}
-        imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
+      - name: {{ .Values.functions.buildPushArtifacts.containerName }}
+        image: {{ .Values.functions.registry }}/{{ .Values.functions.buildPushArtifacts.containerName }}:{{ .Values.functions.containerTag}}
+        imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 12345
+        - containerPort: {{ .Values.functions.buildPushArtifacts.port }}
+      imagePullSecrets:
+      - name: regcred3
+---
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: {{ .Values.functions.completeTest.name }}
+spec:
+  replicas: {{ .Values.frontend.replicas }}
+  selector:
+    matchLabels:
+      nuclio-ci/service: {{ template "nuclio-ci.serviceName" . }}
+  template:
+    metadata:
+      labels:
+        nuclio-ci/service: {{ template "nuclio-ci.serviceName" . }}
+    spec:
+      containers:
+      - name: {{ .Values.functions.completeTest.containerName }}
+        image: {{ .Values.functions.registry }}/{{ .Values.functions.completeTest.containerName }}:{{ .Values.functions.containerTag}}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: {{ .Values.functions.completeTest.port }}
+      imagePullSecrets:
+      - name: regcred3
+---
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: {{ .Values.functions.databaseInit.name }}
+spec:
+  replicas: {{ .Values.frontend.replicas }}
+  selector:
+    matchLabels:
+      nuclio-ci/service: {{ template "nuclio-ci.serviceName" . }}
+  template:
+    metadata:
+      labels:
+        nuclio-ci/service: {{ template "nuclio-ci.serviceName" . }}
+    spec:
+      containers:
+      - name: {{ .Values.functions.databaseInit.containerName }}
+        image: {{ .Values.functions.registry }}/{{ .Values.functions.databaseInit.containerName }}:{{ .Values.functions.containerTag}}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: {{ .Values.functions.databaseInit.port }}
+      imagePullSecrets:
+      - name: regcred3
+---
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: {{ .Values.functions.gatekeeper.name }}
+spec:
+  replicas: {{ .Values.frontend.replicas }}
+  selector:
+    matchLabels:
+      nuclio-ci/service: {{ template "nuclio-ci.serviceName" . }}
+  template:
+    metadata:
+      labels:
+        nuclio-ci/service: {{ template "nuclio-ci.serviceName" . }}
+    spec:
+      containers:
+      - name: {{ .Values.functions.gatekeeper.containerName }}
+        image: {{ .Values.functions.registry }}/{{ .Values.functions.gatekeeper.containerName }}:{{ .Values.functions.containerTag}}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: {{ .Values.functions.gatekeeper.port }}
+      imagePullSecrets:
+      - name: regcred3
+---
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: {{ .Values.functions.githubStatusUpdater.name }}
+spec:
+  replicas: {{ .Values.frontend.replicas }}
+  selector:
+    matchLabels:
+      nuclio-ci/service: {{ template "nuclio-ci.serviceName" . }}
+  template:
+    metadata:
+      labels:
+        nuclio-ci/service: {{ template "nuclio-ci.serviceName" . }}
+    spec:
+      containers:
+      - name: {{ .Values.functions.githubStatusUpdater.containerName }}
+        image: {{ .Values.functions.registry }}/{{ .Values.functions.githubStatusUpdater.containerName }}:{{ .Values.functions.containerTag}}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: {{ .Values.functions.githubStatusUpdater.port }}
+      imagePullSecrets:
+      - name: regcred3
+---
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: {{ .Values.functions.releaseNode.name }}
+spec:
+  replicas: {{ .Values.frontend.replicas }}
+  selector:
+    matchLabels:
+      nuclio-ci/service: {{ template "nuclio-ci.serviceName" . }}
+  template:
+    metadata:
+      labels:
+        nuclio-ci/service: {{ template "nuclio-ci.serviceName" . }}
+    spec:
+      containers:
+      - name: {{ .Values.functions.releaseNode.containerName }}
+        image: {{ .Values.functions.registry }}/{{ .Values.functions.releaseNode.containerName }}:{{ .Values.functions.containerTag}}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: {{ .Values.functions.releaseNode.port }}
+      imagePullSecrets:
+      - name: regcred3
+---
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: {{ .Values.functions.runJob.name }}
+spec:
+  replicas: {{ .Values.frontend.replicas }}
+  selector:
+    matchLabels:
+      nuclio-ci/service: {{ template "nuclio-ci.serviceName" . }}
+  template:
+    metadata:
+      labels:
+        nuclio-ci/service: {{ template "nuclio-ci.serviceName" . }}
+    spec:
+      containers:
+      - name: {{ .Values.functions.runJob.containerName }}
+        image: {{ .Values.functions.registry }}/{{ .Values.functions.runJob.containerName }}:{{ .Values.functions.containerTag}}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: {{ .Values.functions.runJob.port }}
+      imagePullSecrets:
+      - name: regcred3
+---
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: {{ .Values.functions.runTestCase.name }}
+spec:
+  replicas: {{ .Values.frontend.replicas }}
+  selector:
+    matchLabels:
+      nuclio-ci/service: {{ template "nuclio-ci.serviceName" . }}
+  template:
+    metadata:
+      labels:
+        nuclio-ci/service: {{ template "nuclio-ci.serviceName" . }}
+    spec:
+      containers:
+      - name: {{ .Values.functions.runTestCase.containerName }}
+        image: {{ .Values.functions.registry }}/{{ .Values.functions.runTestCase.containerName }}:{{ .Values.functions.containerTag}}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: {{ .Values.functions.runTestCase.port }}
+      imagePullSecrets:
+      - name: regcred3
+---
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: {{ .Values.functions.slackNotifier.name }}
+spec:
+  replicas: {{ .Values.frontend.replicas }}
+  selector:
+    matchLabels:
+      nuclio-ci/service: {{ template "nuclio-ci.serviceName" . }}
+  template:
+    metadata:
+      labels:
+        nuclio-ci/service: {{ template "nuclio-ci.serviceName" . }}
+    spec:
+      containers:
+      - name: {{ .Values.functions.slackNotifier.containerName }}
+        image: {{ .Values.functions.registry }}/{{ .Values.functions.slackNotifier.containerName }}:{{ .Values.functions.containerTag}}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: {{ .Values.functions.slackNotifier.port }}
+      imagePullSecrets:
+      - name: regcred3

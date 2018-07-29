@@ -13,7 +13,7 @@ class TestCase(nuclio_sdk.TestCase):
         test_case_id = cur.fetchall()[0][0]
         print(test_case_id)
 
-        self._platform.call_function(36549, nuclio_sdk.Event(body={
+        self._platform.call_function(31549, nuclio_sdk.Event(body={
             'test_case': test_case_id,
             'test_case_result': 'failure',
         }))

@@ -10,7 +10,7 @@ class TestCase(nuclio_sdk.TestCase):
     def test_github_status(self):
 
         # notify via github that build is running
-        self._platform.context.platform.call_function(36544, nuclio_sdk.Event(body={
+        self._platform.context.platform.call_function(31544, nuclio_sdk.Event(body={
             'state': 'pending',
             'repo_url': 'https://github.com/ilaykav/nuclioTestService',
             'commit_sha': '84ea04abcd2111e4e8705d7f98b0dc2c72f53a13'

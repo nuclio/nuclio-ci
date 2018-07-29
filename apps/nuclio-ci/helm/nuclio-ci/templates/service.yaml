@@ -1,15 +1,15 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ template "nuclio-ci.gatekeeper" . }}
+  name: {{ template "nuclio-ci.serviceName" . }}
   labels:
-    app: {{ template "nuclio-ci.gatekeeper" . }}
-    chart: {{ template "nuclio-ci.gatekeeper" . }}
+    app: {{ template "nuclio-ci.serviceName" . }}
+    chart: {{ template "nuclio-ci.serviceName" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
   ports:
-    - port: 12345
+    - port: 12245
       targetPort: http
       protocol: TCP
       name: ngrok

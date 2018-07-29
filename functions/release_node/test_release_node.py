@@ -13,7 +13,7 @@ class TestCase(nuclio_sdk.TestCase):
         cur.execute('insert into nodes values(%s) returning oid', (job_id, ))
         node_id = cur.fetchall()[0][0]
 
-        self._platform.call_function(36550, nuclio_sdk.Event(body={
+        self._platform.call_function(31550, nuclio_sdk.Event(body={
             'node_id': node_id,
         }), wait_for_response=True)
 

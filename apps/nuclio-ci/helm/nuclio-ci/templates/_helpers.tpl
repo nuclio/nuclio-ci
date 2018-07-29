@@ -1,14 +1,14 @@
 
 {{- define "nuclio-ci.Name" -}}
-{{- "nuclioci" | trunc 63 -}}
+{{- "nuclio-ci" | trunc 63 -}}
 {{- end -}}
 
 {{- define "nuclio-ci.buildPushArtifacts" -}}
-{{- "build_push_artifacts" | trunc 63 -}}
+{{- "build-push-artifacts" | trunc 63 -}}
 {{- end -}}
 
 {{- define "nuclio-ci.completeTest" -}}
-{{- "complete_test" | trunc 63 -}}
+{{- "complete-test" | trunc 63 -}}
 {{- end -}}
 
 {{- define "nuclio-ci.databaseInit" -}}
@@ -20,7 +20,7 @@
 {{- end -}}
 
 {{- define "nuclio-ci.githubStatusUpdater" -}}
-{{- "github_status_updater" | trunc 63 -}}
+{{- "github-status-updater" | trunc 63 -}}
 {{- end -}}
 
 {{- define "nuclio-ci.releaseNode" -}}
@@ -37,4 +37,8 @@
 
 {{- define "nuclio-ci.slackNotifier" -}}
 {{- "slack-notifier" | trunc 63 -}}
+{{- end -}}
+
+{{- define "nuclio-ci.serviceName" -}}
+{{- "nuclio-ci-service" | trunc 63 -}}
 {{- end -}}

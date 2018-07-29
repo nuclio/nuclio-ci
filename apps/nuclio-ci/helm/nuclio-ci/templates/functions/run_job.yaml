@@ -1,13 +1,13 @@
 apiVersion: "nuclio.io/v1beta1"
 kind: "Function"
 metadata:
-  name: {{ template "nuclio-ci.databaseInit" . }}
+  name: {{ template "nuclio-ci.runJob" . }}
 spec:
   env:
     - name: PGINFO
       value: postgres:pass@172.17.0.1:5432
   runtime: "python"
-  handler: "database_init:handler"
+  handler: "run_job:handler"
   build:
     commands:
     - "apk add --update --no-cache gcc python-dev musl-dev postgresql-dev docker"
@@ -17,4 +17,4 @@ spec:
       maxWorkers: 4
       kind: "http"
       attributes:
-        port: 36543
+        port: 31548

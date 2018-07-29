@@ -6,14 +6,14 @@ import delegator
 # calls given function with given arguments, returns body of response
 def call_function(function_name, function_arguments=None):
     functions_ports = {
-        'database_init': 36543,
-        'github_status_updater': 36544,
-        'slack_notifier': 36545,
-        'build_and_push_artifacts': 36546,
-        'run_test_case': 36547,
-        'run_job': 36549,
-        'test_case_complete': 36549,
-        'release_node': 36550
+        'database_init': 31543,
+        'github_status_updater': 31544,
+        'slack_notifier': 31545,
+        'build_and_push_artifacts': 31546,
+        'run_test_case': 31547,
+        'run_job': 31549,
+        'test_case_complete': 31549,
+        'release_node': 31550
     }
 
     # if given_host is specified post it instead of

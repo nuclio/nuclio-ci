@@ -16,9 +16,6 @@ COPY --from=processor /home/nuclio/bin/processor /usr/local/bin/processor
 COPY --from=processor /home/nuclio/bin/py /opt/nuclio/
 COPY --from=uhttpc /home/nuclio/bin/uhttpc /usr/local/bin/uhttpc
 
-# Copy the handler directory to /opt/nuclio
-COPY . /opt/nuclio
-
 RUN sh && export PATH=$PATH:/usr/local/go/bin\
     && apt-get update && apt-get install -y git &&\
     apt-get install -y build-essential &&\
@@ -31,6 +28,23 @@ RUN sh && export PATH=$PATH:/usr/local/go/bin\
     go get github.com/v3io/v3io-go-http/... &&\
     go get github.com/nuclio/logger/... && go get github.com/nuclio/nuclio-sdk-go/... &&\
     go get github.com/nuclio/amqp/...
+
+# Copy the appropriate functions
+COPY functions/build_push_artifacts /opt/nuclio/build_push_artifacts
+COPY functions/complete_test /opt/nuclio/complete_test
+COPY functions/database_init /opt/nuclio/database_init
+COPY functions/gatekeeper /opt/nuclio/gatekeeper
+COPY functions/github_status_updater /opt/nuclio/github_status_updater
+COPY functions/release_node /opt/nuclio/release_node
+COPY functions/run_job /opt/nuclio/run_job
+COPY functions/run_test_case /opt/nuclio/run_test_case
+COPY functions/slack_notifier /opt/nuclio/slack_notifier
+
+# Copy all of the shared code
+COPY libs /opt/nuclio/libs
+
+# Copy requirements
+COPY apps/nuclio-ci /opt/nuclio/nuclio-ci
 
 # Readiness probe
 HEALTHCHECK --interval=1s --timeout=3s CMD /usr/local/bin/uhttpc --url http://localhost:8082/ready || exit 1
