@@ -1,0 +1,7 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ template "nuclio-ci.gatekeeper" . }}
+spec:
+  rules:
+  - host: {{ .Values.host }}

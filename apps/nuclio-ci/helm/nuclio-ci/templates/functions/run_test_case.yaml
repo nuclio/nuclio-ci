@@ -1,0 +1,32 @@
+apiVersion: "nuclio.io/v1beta1"
+kind: "Function"
+metadata:
+  name: {{ template "nuclio-ci.runTestCase" . }}
+spec:
+  httpPort: 31549
+  env:
+    - name: PGINFO
+      value: postgres:pass@172.17.0.1:5432
+  runtime: "python"
+  handler: "run_test_case:handler"
+#  volumes:
+#  - volume:
+#      hostPath:
+#        path: "/var/run/docker.sock"
+#    volumeMount:
+#      mountPath: "/var/run/docker.sock"
+#  - volume:
+#      hostPath:
+#        path: "/var/lib/docker"
+#    volumeMount:
+#      mountPath: "/var/lib/docker"
+  build:
+    commands:
+    - "apk add --update --no-cache gcc musl-dev python-dev postgresql-dev docker"
+    - "pip install delegator.py psycopg2 requests parse"
+  triggers:
+    httpTrigger:
+      maxWorkers: 4
+      kind: "http"
+      attributes:
+        port: 31547

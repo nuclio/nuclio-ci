@@ -1,0 +1,21 @@
+apiVersion: "nuclio.io/v1beta1"
+kind: "Function"
+metadata:
+  name: {{ template "nuclio-ci.githubStatusUpdater" . }}
+spec:
+  env:
+    - name: REPO_OWNER_USERNAME
+      value: some_repo_owner_username
+    - name: REPO_OWNER_OAUTH_TOKEN
+      value: some_repo_owner_oauth_token
+  runtime: "python"
+  handler: "github_status_updater:handler"
+  build:
+    commands:
+    - "pip install requests"
+  triggers:
+    httpTrigger:
+      maxWorkers: 4
+      kind: "http"
+      attributes:
+        port: 31544

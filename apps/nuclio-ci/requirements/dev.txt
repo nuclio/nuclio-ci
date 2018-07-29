@@ -1,0 +1,3 @@
+-r common.txt
+pytest==3.5.1
+delegator.py==0.1.0
